@@ -1,59 +1,57 @@
 import { Scene, Input, Time, GameObjects } from 'phaser';
-import { LEVEL_PACKS, LEVELS, LevelInfo } from '../levels/levelList';
-import { importPack } from '../levels/importedPacks';
-import { LevelParseError } from '../levels/LevelParser';
+import { LEVEL_PACKS, LEVELS, LevelPack } from '../levels/levelList';
 import { addButton, addIconButton, buttonLabel, ICON_INSET, TEXT_STYLE } from '../ui/Button';
 import { levelThumbnail } from '../levels/thumbnail';
-import { isUnlocked } from '../progress';
+import { isCompleted, isUnlocked } from '../progress';
+import { importPack } from '../levels/importedPacks';
+import { LevelParseError } from '../levels/LevelParser';
 
+//  Pack list
+const PACK_W = 640;
+const PACK_H = 72;
+const PACK_STEP = 88;
+const PACKS_TOP = 190;
+const KEY_SCROLL = 80;
+
+//  A pack's levels: pages of PER_ROW x ROWS
 const PER_ROW = 5;
+const ROWS = 4;
+export const LEVELS_PER_PAGE = PER_ROW * ROWS;
 const CELL_W = 152;
 const CELL_H = 120;
-const GAP = 24;
-const STEP_X = CELL_W + GAP;
-const STEP_Y = CELL_H + GAP;
-const BAR_HEIGHT = 120;
-const BAR_DEPTH = 10;
-const KEY_SCROLL = 80;
-const BAR_BUTTON_GAP = 120;
-//  Thumbnails are drawn for levels within this many screen heights of the view, and dropped
-//  (texture and all) once they're more than THUMB_DROP_SCREENS away, so a pack of hundreds of
-//  levels only ever has a few screens' worth
-const THUMB_DRAW_SCREENS = 1;
-const THUMB_DROP_SCREENS = 3;
-//  Draw order within the scrolling grid: buttons, then thumbnails, then the lock over them
-const THUMB_DEPTH = 1;
-const LOCK_DEPTH = 2;
+const STEP_X = CELL_W + 24;
+const STEP_Y = CELL_H + 16;
+const GRID_TOP = 165;
 
-//  A level button and its thumbnail, if drawn
-interface Cell
-{
-    level: LevelInfo;
-    x: number;
-    y: number;
-    thumbnail: { image: GameObjects.Image, key: string } | null;
-}
+const BAR_HEIGHT = 100;
+const BAR_DEPTH = 10;
+const BAR_BUTTON_GAP = 120;
 const MESSAGE_MS = 4000;
 //  Largest file the Import button reads
 const MAX_IMPORT_BYTES = 1024 * 1024;
+//  Thumbnails kept after leaving a page, oldest dropped first, so paging through a pack of
+//  hundreds of levels doesn't keep a texture for every one
+const KEPT_THUMBNAILS = 60;
+const keptThumbnails: string[] = [];
 
 export interface LevelSelectData
 {
-    //  Shown in the bottom bar when the screen opens
+    //  Index into LEVEL_PACKS of the pack to show; the list of packs if not given
+    pack?: number;
+    //  Page of that pack, counting from 0; the page with its first unfinished level if not given
+    page?: number;
+    //  Shown when the screen opens
     message?: string;
-    //  Start scrolled to the bottom, where an imported pack has just been added
-    scrollToEnd?: boolean;
 }
 
-//  Every level pack, each with a heading and a grid of level buttons showing a thumbnail of the
-//  level, on one screen. Import adds a pack from a file of levels (see importedPacks.ts).
-//  Scrolls with the mouse wheel or arrow keys when it's taller than the screen; the Back
-//  button stays fixed at the bottom. Levels after the first in a pack are locked until the one
+//  Level select, in two views. The list of packs shows each pack with how many of its levels are
+//  done, and has Import, which adds a pack from a file of levels (see importedPacks.ts). A pack
+//  shows its levels LEVELS_PER_PAGE at a time as thumbnail buttons, with Prev and Next (or the left
+//  and right arrow keys) to turn pages. Levels after the first in a pack are locked until the one
 //  before them is completed (see progress.ts).
 export class LevelSelect extends Scene
 {
     private maxScroll = 0;
-    private cells: Cell[] = [];
     private messageText: GameObjects.Text;
     private messageTimer: Time.TimerEvent | null = null;
 
@@ -65,89 +63,177 @@ export class LevelSelect extends Scene
     create (data: LevelSelectData = {})
     {
         this.messageTimer = null;
-        this.cells = [];
-        const { width, height } = this.scale;
-        const cx = width / 2;
-        const camera = this.cameras.main;
-        camera.setScroll(0, 0);
+        this.maxScroll = 0;
+        this.cameras.main.setScroll(0, 0);
 
-        this.add.text(cx, 90, 'Select Level', { ...TEXT_STYLE, fontSize: 48, strokeThickness: 8 })
-            .setOrigin(0.5);
-
-        let y = 180;
-        for (const pack of LEVEL_PACKS)
+        const pack = data.pack === undefined ? undefined : LEVEL_PACKS[data.pack];
+        if (pack)
         {
-            this.add.text(cx, y, pack.name, { ...TEXT_STYLE, fontSize: 36 }).setOrigin(0.5);
-            const gridTop = y + 50 + CELL_H / 2;
-            const rows = Math.ceil(pack.levels.length / PER_ROW);
-
-            pack.levels.forEach((level, i) =>
-            {
-                const row = Math.floor(i / PER_ROW);
-                const col = i % PER_ROW;
-                //  Center each row on its own number of buttons, so a short last row is centered too
-                const inRow = row < rows - 1 ? PER_ROW : pack.levels.length - row * PER_ROW;
-                const x = cx + (col - (inRow - 1) / 2) * STEP_X;
-                const by = gridTop + row * STEP_Y;
-                const levelIndex = LEVELS.findIndex(l => l.key === level.key);
-
-                //  The thumbnail is drawn when it scrolls near the view (see updateThumbnails)
-                const button = addIconButton(this, x, by, [],
-                    () => this.scene.start('Game', { levelIndex }), { width: CELL_W, height: CELL_H });
-                this.cells.push({ level, x, y: by, thumbnail: null });
-
-                //  Locked until the previous level in the pack is completed: dimmed, with a padlock
-                if (!isUnlocked(levelIndex))
-                {
-                    button.disableInteractive();
-                    this.add.rectangle(x, by, CELL_W, CELL_H, 0x000000, 0.55).setDepth(LOCK_DEPTH);
-                    this.add.image(x, by, 'icon-lock').setDepth(LOCK_DEPTH);
-                }
-            });
-
-            y = gridTop + (rows - 1) * STEP_Y + CELL_H / 2 + 60;
+            this.showPack(data.pack!, pack, data.page);
+        }
+        else
+        {
+            this.showPackList();
         }
 
-        //  Fixed bottom bar with Back; it blocks clicks to level buttons scrolled beneath it
+        if (data.message)
+        {
+            this.showMessage(data.message);
+        }
+    }
+
+    //  Every pack as a button, scrolling if there are more than fit, with Back and Import below
+    private showPackList ()
+    {
+        const { width, height } = this.scale;
+        const cx = width / 2;
+        this.add.text(cx, 90, 'Select Level Pack', { ...TEXT_STYLE, fontSize: 48, strokeThickness: 8 }).setOrigin(0.5);
+
+        LEVEL_PACKS.forEach((pack, i) =>
+        {
+            const y = PACKS_TOP + i * PACK_STEP;
+            const button = addButton(this, cx, y, pack.name, () => this.scene.restart({ pack: i } satisfies LevelSelectData),
+                { width: PACK_W, height: PACK_H });
+            buttonLabel(button).setX(cx - PACK_W / 2 + 24).setOrigin(0, 0.5);
+            const done = pack.levels.filter(level => isCompleted(level.key)).length;
+            const all = done === pack.levels.length;
+            this.add.text(cx + PACK_W / 2 - 24, y, `${all ? '✓ ' : ''}${done} / ${pack.levels.length}`,
+                { ...TEXT_STYLE, fontSize: 24, color: all ? '#9fe08a' : '#ffffff' })
+                .setOrigin(1, 0.5);
+        });
+
+        const bottom = PACKS_TOP + (LEVEL_PACKS.length - 1) * PACK_STEP + PACK_H / 2 + 40;
+        this.maxScroll = Math.max(0, bottom - (height - BAR_HEIGHT));
+
+        this.addBar([
+            ['Back', () => this.scene.start('MainMenu')],
+            ['Import', () => this.pickPack()]
+        ]);
+
+        this.input.on(Input.Events.POINTER_WHEEL,
+            (_pointer: Input.Pointer, _over: unknown, _dx: number, dy: number) => this.scrollBy(dy));
+        const keyboard = this.input.keyboard;
+        if (keyboard)
+        {
+            keyboard.once('keydown-ESC', () => this.scene.start('MainMenu'));
+            keyboard.on('keydown-UP', () => this.scrollBy(-KEY_SCROLL));
+            keyboard.on('keydown-DOWN', () => this.scrollBy(KEY_SCROLL));
+        }
+    }
+
+    //  One page of a pack's levels, with Back to the pack list and Prev and Next between pages
+    private showPack (packIndex: number, pack: LevelPack, page?: number)
+    {
+        const { width } = this.scale;
+        const cx = width / 2;
+        const pages = Math.max(1, Math.ceil(pack.levels.length / LEVELS_PER_PAGE));
+        //  Open on the page with the first unfinished level
+        const firstUnfinished = Math.max(0, pack.levels.findIndex(level => !isCompleted(level.key)));
+        const current = Math.min(pages - 1, Math.max(0, page ?? Math.floor(firstUnfinished / LEVELS_PER_PAGE)));
+        const goTo = (p: number) =>
+        {
+            if (p >= 0 && p < pages && p !== current)
+            {
+                this.scene.restart({ pack: packIndex, page: p } satisfies LevelSelectData);
+            }
+        };
+
+        this.add.text(cx, 60, pack.name, { ...TEXT_STYLE, fontSize: 44, strokeThickness: 8 }).setOrigin(0.5);
+
+        const first = current * LEVELS_PER_PAGE;
+        const onPage = pack.levels.slice(first, first + LEVELS_PER_PAGE);
+        const thumbnails = onPage.map(level => levelThumbnail(this, level, CELL_W - ICON_INSET * 2, CELL_H - ICON_INSET * 2));
+        keepThumbnails(this, thumbnails);
+
+        const rows = Math.ceil(onPage.length / PER_ROW);
+        onPage.forEach((level, i) =>
+        {
+            const row = Math.floor(i / PER_ROW);
+            const col = i % PER_ROW;
+            //  Center each row on its own number of buttons, so a short last row is centered too
+            const inRow = row < rows - 1 ? PER_ROW : onPage.length - row * PER_ROW;
+            const x = cx + (col - (inRow - 1) / 2) * STEP_X;
+            const y = GRID_TOP + row * STEP_Y;
+            const levelIndex = LEVELS.findIndex(l => l.key === level.key);
+
+            const button = addIconButton(this, x, y, [{ key: thumbnails[i], scale: 1 }],
+                () => this.scene.start('Game', { levelIndex }), { width: CELL_W, height: CELL_H });
+            //  Level number in the corner, over the thumbnail
+            this.add.text(x - CELL_W / 2 + 6, y - CELL_H / 2 + 2, String(first + i + 1),
+                { ...TEXT_STYLE, fontSize: 18, strokeThickness: 4 });
+
+            //  Locked until the previous level in the pack is completed: dimmed, with a padlock
+            if (!isUnlocked(levelIndex))
+            {
+                button.disableInteractive();
+                this.add.rectangle(x, y, CELL_W, CELL_H, 0x000000, 0.55);
+                this.add.image(x, y, 'icon-lock');
+            }
+        });
+
+        const toPackList = () => this.scene.restart({} satisfies LevelSelectData);
+        this.addBar([
+            ['Back', toPackList],
+            ...(pages > 1 ? [
+                ['Prev', () => goTo(current - 1), current > 0] as const,
+                [`${current + 1} / ${pages}`, null] as const,
+                ['Next', () => goTo(current + 1), current < pages - 1] as const
+            ] : [])
+        ]);
+
+        const keyboard = this.input.keyboard;
+        if (keyboard)
+        {
+            keyboard.once('keydown-ESC', toPackList);
+            keyboard.on('keydown-LEFT', () => goTo(current - 1));
+            keyboard.on('keydown-RIGHT', () => goTo(current + 1));
+        }
+    }
+
+    //  The fixed bottom bar: buttons (or, with no action, a plain label) spread evenly across it,
+    //  and a message line above them. A button whose third entry is false is shown dimmed and does
+    //  nothing. The bar blocks clicks to anything scrolled beneath it.
+    private addBar (items: readonly (readonly [string, (() => void) | null, boolean?])[])
+    {
+        const { width, height } = this.scale;
+        const cx = width / 2;
         this.add.rectangle(0, height - BAR_HEIGHT, width, BAR_HEIGHT, 0x000000, 0.45)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(BAR_DEPTH)
             .setInteractive();
-        const barY = height - BAR_HEIGHT / 2 + 12;
-        const back = addButton(this, cx - BAR_BUTTON_GAP, barY, 'Back', () => this.back());
-        const importButton = addButton(this, cx + BAR_BUTTON_GAP, barY, 'Import', () => this.pickPack());
-        for (const object of [back, buttonLabel(back), importButton, buttonLabel(importButton)])
+
+        const y = height - BAR_HEIGHT / 2 + 8;
+        const step = BAR_BUTTON_GAP * 2;
+        items.forEach(([label, action, enabled = true], i) =>
         {
-            object.setScrollFactor(0).setDepth(BAR_DEPTH + 1);
-        }
-        this.messageText = this.add.text(cx, height - BAR_HEIGHT + 22, '', { ...TEXT_STYLE, fontSize: 20 })
-            .setOrigin(0.5)
+            const x = cx + (i - (items.length - 1) / 2) * step;
+            const objects: GameObjects.GameObject[] = [];
+            if (action)
+            {
+                const button = addButton(this, x, y, label, action, { width: 180 });
+                if (!enabled)
+                {
+                    button.disableInteractive().setAlpha(0.4);
+                    buttonLabel(button).setAlpha(0.4);
+                }
+                objects.push(button, buttonLabel(button));
+            }
+            else
+            {
+                objects.push(this.add.text(x, y, label, { ...TEXT_STYLE, fontSize: 28 }).setOrigin(0.5));
+            }
+            for (const object of objects as (GameObjects.GameObject & GameObjects.Components.ScrollFactor & GameObjects.Components.Depth)[])
+            {
+                object.setScrollFactor(0).setDepth(BAR_DEPTH + 1);
+            }
+        });
+
+        this.messageText = this.add.text(cx, height - BAR_HEIGHT - 4, '', { ...TEXT_STYLE, fontSize: 20 })
+            .setOrigin(0.5, 1)
             .setWordWrapWidth(width - 40)
             .setScrollFactor(0)
             .setDepth(BAR_DEPTH + 1);
-
-        this.maxScroll = Math.max(0, y - (height - BAR_HEIGHT));
-        if (data.scrollToEnd)
-        {
-            camera.scrollY = this.maxScroll;
-        }
-        if (data.message)
-        {
-            this.showMessage(data.message);
-        }
-        this.updateThumbnails();
-
-        this.input.on(Input.Events.POINTER_WHEEL,
-            (_pointer: Input.Pointer, _over: unknown, _dx: number, dy: number) => this.scrollBy(dy));
-
-        const keyboard = this.input.keyboard;
-        if (keyboard)
-        {
-            keyboard.once('keydown-ESC', () => this.back());
-            keyboard.on('keydown-UP', () => this.scrollBy(-KEY_SCROLL));
-            keyboard.on('keydown-DOWN', () => this.scrollBy(KEY_SCROLL));
-        }
     }
 
     //  Lets the user pick a file of levels to add as a pack
@@ -167,7 +253,7 @@ export class LevelSelect extends Scene
         input.click();
     }
 
-    //  Adds the file's levels as a pack named after it, then redraws the screen to show it
+    //  Adds the file's levels as a pack named after it, then opens that pack
     private async importFile (file: File)
     {
         if (file.size > MAX_IMPORT_BYTES)
@@ -196,11 +282,10 @@ export class LevelSelect extends Scene
         {
             const { count, saved } = importPack(this, name, text);
             const levels = count === 1 ? '1 level' : `${count} levels`;
-            const data: LevelSelectData = {
-                message: saved ? `Imported ${name}: ${levels}.` : `Imported ${name} (${levels}), but it couldn't be saved for next time.`,
-                scrollToEnd: true
-            };
-            this.scene.restart(data);
+            this.scene.restart({
+                pack: LEVEL_PACKS.findIndex(p => p.imported && p.name === name),
+                message: saved ? `Imported ${name}: ${levels}.` : `Imported ${name} (${levels}), but it couldn't be saved for next time.`
+            } satisfies LevelSelectData);
         }
         catch (error)
         {
@@ -212,7 +297,7 @@ export class LevelSelect extends Scene
         }
     }
 
-    //  Shows a message in the bottom bar for a few seconds
+    //  Shows a message above the bottom bar for a few seconds
     private showMessage (text: string)
     {
         this.messageText.setText(text);
@@ -224,36 +309,24 @@ export class LevelSelect extends Scene
     {
         const camera = this.cameras.main;
         camera.scrollY = Math.min(this.maxScroll, Math.max(0, camera.scrollY + dy));
-        this.updateThumbnails();
     }
+}
 
-    //  Draws the thumbnails of levels near the view and drops those far from it
-    private updateThumbnails ()
+//  Notes the thumbnails a page uses and frees the least recently used beyond KEPT_THUMBNAILS.
+//  Runs as a page opens, when the previous page's images are already gone.
+function keepThumbnails (scene: Scene, keys: readonly string[]): void
+{
+    for (const key of keys)
     {
-        const top = this.cameras.main.scrollY;
-        const { height } = this.scale;
-        const distance = (cell: Cell) =>
-            Math.max(0, top - (cell.y + CELL_H / 2), (cell.y - CELL_H / 2) - (top + height));
-
-        for (const cell of this.cells)
+        const i = keptThumbnails.indexOf(key);
+        if (i >= 0)
         {
-            const d = distance(cell);
-            if (!cell.thumbnail && d <= height * THUMB_DRAW_SCREENS)
-            {
-                const key = levelThumbnail(this, cell.level, CELL_W - ICON_INSET * 2, CELL_H - ICON_INSET * 2);
-                cell.thumbnail = { image: this.add.image(cell.x, cell.y, key).setDepth(THUMB_DEPTH), key };
-            }
-            else if (cell.thumbnail && d > height * THUMB_DROP_SCREENS)
-            {
-                cell.thumbnail.image.destroy();
-                this.textures.remove(cell.thumbnail.key);
-                cell.thumbnail = null;
-            }
+            keptThumbnails.splice(i, 1);
         }
+        keptThumbnails.push(key);
     }
-
-    private back ()
+    while (keptThumbnails.length > Math.max(KEPT_THUMBNAILS, keys.length))
     {
-        this.scene.start('MainMenu');
+        scene.textures.remove(keptThumbnails.shift()!);
     }
 }

@@ -28,6 +28,11 @@ function load (): Set<string>
     return completed;
 }
 
+export function isCompleted (levelKey: string): boolean
+{
+    return load().has(levelKey);
+}
+
 export function markCompleted (levelKey: string): void
 {
     const keys = load();
