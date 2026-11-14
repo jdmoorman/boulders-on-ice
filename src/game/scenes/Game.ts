@@ -363,9 +363,30 @@ export class Game extends Scene
             {
                 onDone();
                 this.isMoving = false;
+                if (this.isSolved())
+                {
+                    this.levelComplete = true;
+                    this.playPlayerAnim('idle');
+                    this.completeLevel();
+                    return;
+                }
                 this.saveProgress();
             }
         });
+    }
+
+    //  Whether a level without an exit has been solved: it has at least one pressure plate or
+    //  trap, every plate has a boulder on it (the player standing on one doesn't count here,
+    //  though it does for opening doors), and every trap is armed. Levels with an exit are
+    //  finished by walking into it instead.
+    private isSolved (): boolean
+    {
+        const { data, traps } = this.level;
+        if (data.goal || this.levelComplete || this.springing || (data.plates.length === 0 && traps.length === 0))
+        {
+            return false;
+        }
+        return doorsOpen(data, data.boulders, this.trapsArmed());
     }
 
     //  Remembers where everything is, so Play can pick the level up after a reload. Not for
