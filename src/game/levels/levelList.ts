@@ -88,6 +88,19 @@ function listLevels ()
 }
 listLevels();
 
+//  Takes the imported pack of this name out of the list; returns it, or undefined if there's none
+export function removeImportedPack (name: string): LevelPack | undefined
+{
+    const i = packs.findIndex(p => p.imported && p.name === name);
+    if (i < 0)
+    {
+        return undefined;
+    }
+    const [pack] = packs.splice(i, 1);
+    listLevels();
+    return pack;
+}
+
 //  Adds an imported pack after the others, or replaces the imported pack of the same name
 export function setImportedPack (pack: LevelPack): void
 {

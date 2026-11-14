@@ -1,6 +1,6 @@
 import type { Scene } from 'phaser';
 import { LevelParseError, parseLevel, splitLevels } from './LevelParser';
-import { LevelInfo, setImportedPack } from './levelList';
+import { LevelInfo, removeImportedPack, setImportedPack } from './levelList';
 
 //  Level packs loaded from files on the Level Select screen. Each is one file of levels separated
 //  by blank lines (see splitLevels), named after the file. They're kept in localStorage so they
@@ -119,4 +119,23 @@ export function importPack (scene: Scene, name: string, text: string): { count: 
         saved = false;
     }
     return { count, saved };
+}
+
+//  Removes an imported pack from the game and from storage. Progress through its levels is kept,
+//  so importing it again picks up where it was left.
+export function removePack (scene: Scene, name: string): void
+{
+    const pack = removeImportedPack(name);
+    if (pack?.levels[0])
+    {
+        scene.cache.text.remove(pack.levels[0].file);
+    }
+    try
+    {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(loadStored().filter(p => p.name !== name)));
+    }
+    catch
+    {
+        //  Not saved, so nothing to remove
+    }
 }

@@ -3,7 +3,7 @@ import { LEVEL_PACKS, LEVELS, LevelPack } from '../levels/levelList';
 import { addButton, addIconButton, buttonLabel, ICON_INSET, TEXT_STYLE } from '../ui/Button';
 import { levelThumbnail } from '../levels/thumbnail';
 import { isCompleted, isUnlocked } from '../progress';
-import { importPack } from '../levels/importedPacks';
+import { importPack, removePack } from '../levels/importedPacks';
 import { LevelParseError } from '../levels/LevelParser';
 
 //  Pack list
@@ -12,6 +12,10 @@ const PACK_H = 72;
 const PACK_STEP = 88;
 const PACKS_TOP = 190;
 const KEY_SCROLL = 80;
+//  The red ✕ beside an imported pack, which removes it
+const REMOVE_SIZE = 56;
+const REMOVE_FILL = 0xb03a3a;
+const REMOVE_FILL_HOVER = 0xd65050;
 
 //  A pack's levels: pages of PER_ROW x ROWS
 const PER_ROW = 5;
@@ -100,6 +104,10 @@ export class LevelSelect extends Scene
             this.add.text(cx + PACK_W / 2 - 24, y, `${all ? '✓ ' : ''}${done} / ${pack.levels.length}`,
                 { ...TEXT_STYLE, fontSize: 24, color: all ? '#9fe08a' : '#ffffff' })
                 .setOrigin(1, 0.5);
+            if (pack.imported)
+            {
+                this.addRemoveButton(cx + PACK_W / 2 + 16 + REMOVE_SIZE / 2, y, pack.name);
+            }
         });
 
         const bottom = PACKS_TOP + (LEVEL_PACKS.length - 1) * PACK_STEP + PACK_H / 2 + 40;
@@ -119,6 +127,26 @@ export class LevelSelect extends Scene
             keyboard.on('keydown-UP', () => this.scrollBy(-KEY_SCROLL));
             keyboard.on('keydown-DOWN', () => this.scrollBy(KEY_SCROLL));
         }
+    }
+
+    //  A red ✕ that removes an imported pack, after asking
+    private addRemoveButton (x: number, y: number, name: string)
+    {
+        const button = this.add.rectangle(x, y, REMOVE_SIZE, REMOVE_SIZE, REMOVE_FILL)
+            .setStrokeStyle(3, 0x000000)
+            .setInteractive({ useHandCursor: true });
+        this.add.text(x, y, '✕', { ...TEXT_STYLE, fontSize: 30 }).setOrigin(0.5);
+        button.on('pointerover', () => button.setFillStyle(REMOVE_FILL_HOVER));
+        button.on('pointerout', () => button.setFillStyle(REMOVE_FILL));
+        button.on('pointerup', () =>
+        {
+            if (!window.confirm(`Remove the level pack "${name}"? You can import it again later, and your progress through it is kept.`))
+            {
+                return;
+            }
+            removePack(this, name);
+            this.scene.restart({ message: `Removed ${name}.` } satisfies LevelSelectData);
+        });
     }
 
     //  One page of a pack's levels, with Back to the pack list and Prev and Next between pages
