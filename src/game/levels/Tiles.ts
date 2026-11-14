@@ -46,6 +46,17 @@ export const LEGEND: Readonly<Record<string, LegendEntry>> = {
     't': { tile: TileIndex.Floor, entity: 'trap' }
 };
 
+//  The legend of Boxoban levels (github.com/google-deepmind/boxoban-levels), a Sokoban format:
+//  boxes become boulders and their targets pressure plates, all on snow. Boxoban has no ice and
+//  no exit. A level is read with this legend when it has a '$' or '@', which ours never uses.
+export const BOXOBAN_LEGEND: Readonly<Record<string, LegendEntry>> = {
+    '#': { tile: TileIndex.Wall },
+    ' ': { tile: TileIndex.Floor },
+    '.': { tile: TileIndex.Floor, entity: 'plate' },
+    '$': { tile: TileIndex.Floor, entity: 'boulder' },
+    '@': { tile: TileIndex.Floor, entity: 'player' }
+};
+
 //  Whether (x, y) is a wall with snow or ice right below it: the only place an exit can go
 export function isSouthFacingWall (tiles: number[][], x: number, y: number): boolean
 {

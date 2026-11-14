@@ -1,4 +1,4 @@
-import { LEGEND } from './Tiles';
+import { BOXOBAN_LEGEND, LEGEND, LegendEntry, TileIndex } from './Tiles';
 
 export interface GridPoint
 {
@@ -83,7 +83,8 @@ export function parseLevel (text: string): LevelData
     return { ...draft, player };
 }
 
-//  Like parseLevel, but a level without a player is allowed.
+//  Like parseLevel, but a level without a player is allowed. Levels in the Boxoban format (with
+//  a '$' or '@') are read with BOXOBAN_LEGEND instead of LEGEND.
 export function parseLevelDraft (text: string): LevelDraft
 {
     const rows = text
@@ -100,6 +101,9 @@ export function parseLevelDraft (text: string): LevelDraft
         throw new LevelParseError('Level is empty');
     }
 
+    const legend: Readonly<Record<string, LegendEntry>> =
+        rows.some(line => line.includes('$') || line.includes('@')) ? BOXOBAN_LEGEND : LEGEND;
+
     const width = Math.max(...rows.map(line => line.length));
     const height = rows.length;
     const tiles: number[][] = [];
@@ -112,13 +116,18 @@ export function parseLevelDraft (text: string): LevelDraft
 
     rows.forEach((rawLine, y) =>
     {
-        const line = rawLine.padEnd(width, ' ');
         const row: number[] = [];
 
         for (let x = 0; x < width; x++)
         {
-            const ch = line[x];
-            const entry = LEGEND[ch];
+            //  Short rows are padded with void (not with spaces, which are snow in Boxoban)
+            if (x >= rawLine.length)
+            {
+                row.push(TileIndex.Void);
+                continue;
+            }
+            const ch = rawLine[x];
+            const entry = legend[ch];
 
             if (!entry)
             {
