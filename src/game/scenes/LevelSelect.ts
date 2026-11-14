@@ -3,7 +3,7 @@ import { LEVEL_PACKS, LEVELS, LevelPack } from '../levels/levelList';
 import { addButton, addIconButton, buttonLabel, ICON_INSET, TEXT_STYLE } from '../ui/Button';
 import { levelThumbnail } from '../levels/thumbnail';
 import { isCompleted, isUnlocked } from '../progress';
-import { importPack, removePack } from '../levels/importedPacks';
+import { checkPack, importPack, removePack } from '../levels/importedPacks';
 import { LevelParseError } from '../levels/LevelParser';
 
 //  Pack list
@@ -281,7 +281,8 @@ export class LevelSelect extends Scene
         input.click();
     }
 
-    //  Adds the file's levels as a pack named after it, then opens that pack
+    //  Checks the file's levels, asks what to call the pack (suggesting the file's name), adds it,
+    //  then opens it
     private async importFile (file: File)
     {
         if (file.size > MAX_IMPORT_BYTES)
@@ -305,9 +306,15 @@ export class LevelSelect extends Scene
             return;
         }
 
-        const name = file.name.replace(/\.txt$/i, '');
         try
         {
+            //  Check first, so a file that can't be played doesn't get as far as asking for a name
+            checkPack(text);
+            const name = this.askPackName(file.name.replace(/\.txt$/i, ''));
+            if (name === null)
+            {
+                return;
+            }
             const { count, saved } = importPack(this, name, text);
             const levels = count === 1 ? '1 level' : `${count} levels`;
             this.scene.restart({
@@ -322,6 +329,39 @@ export class LevelSelect extends Scene
                 throw error;
             }
             this.showMessage(`Couldn't import ${file.name}: ${error.message}.`);
+        }
+    }
+
+    //  Asks for a pack name until one is given that's new or may replace the imported pack of that
+    //  name; null if the user cancels
+    private askPackName (suggested: string): string | null
+    {
+        let name: string | null = suggested;
+        while (true)
+        {
+            name = window.prompt('Name for the imported level pack:', name)?.trim() ?? null;
+            if (name === null)
+            {
+                return null;
+            }
+            if (name === '')
+            {
+                name = suggested;
+                continue;
+            }
+            const taken = LEVEL_PACKS.find(p => p.name === name);
+            if (!taken)
+            {
+                return name;
+            }
+            if (taken.imported && window.confirm(`There's already an imported pack called "${name}". Replace it?`))
+            {
+                return name;
+            }
+            if (!taken.imported)
+            {
+                window.alert(`"${name}" is the name of a built-in pack. Please choose another.`);
+            }
         }
     }
 
