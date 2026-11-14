@@ -16,11 +16,13 @@ export interface LevelPack
 {
     name: string;
     levels: readonly LevelInfo[];
+    //  Loaded from a file on the Level Select screen (see importedPacks.ts), not built in
+    imported?: boolean;
 }
 
 //  All level packs, in order, each with its levels in play order. To add a level, put its .txt
 //  file in public/assets/levels and add an entry to its pack here.
-export const LEVEL_PACKS: readonly LevelPack[] = [
+const packs: LevelPack[] = [
     {
         name: 'Boulders',
         levels: [
@@ -70,9 +72,36 @@ export const LEVEL_PACKS: readonly LevelPack[] = [
     }
 ];
 
-//  Every level, pack by pack. A level's index here is how scenes refer to it.
-export const LEVELS: readonly (LevelInfo & { pack: LevelPack, number: number })[] =
-    LEVEL_PACKS.flatMap(pack => pack.levels.map((level, i) => ({ ...level, pack, number: i + 1 })));
+export const LEVEL_PACKS: readonly LevelPack[] = packs;
+
+type ListedLevel = LevelInfo & { pack: LevelPack, number: number };
+const levels: ListedLevel[] = [];
+
+//  Every level, pack by pack. A level's index here is how scenes refer to it. Imported packs come
+//  after the built-in ones, so adding one doesn't move any other level.
+export const LEVELS: readonly ListedLevel[] = levels;
+
+function listLevels ()
+{
+    levels.length = 0;
+    levels.push(...packs.flatMap(pack => pack.levels.map((level, i) => ({ ...level, pack, number: i + 1 }))));
+}
+listLevels();
+
+//  Adds an imported pack after the others, or replaces the imported pack of the same name
+export function setImportedPack (pack: LevelPack): void
+{
+    const i = packs.findIndex(p => p.imported && p.name === pack.name);
+    if (i >= 0)
+    {
+        packs[i] = pack;
+    }
+    else
+    {
+        packs.push(pack);
+    }
+    listLevels();
+}
 
 //  Whether a level is the last in its pack, so there's no Next level after it
 export function isLastInPack (index: number): boolean

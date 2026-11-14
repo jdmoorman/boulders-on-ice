@@ -2,6 +2,7 @@ import { Scene, Textures } from 'phaser';
 import { createPlayerAnimations, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT } from '../playerAnimations';
 import { generateTextures } from '../textures';
 import { LEVELS } from '../levels/levelList';
+import { loadImportedPacks } from '../levels/importedPacks';
 import { createPlateAnimations, loadPlates } from '../plates';
 import { createDoorAnimations, loadDoors } from '../doors';
 import { createTrapAnimations, loadTraps } from '../traps';
@@ -70,6 +71,7 @@ export class Preloader extends Scene
         createTrapAnimations(this);
 
         generateTextures(this);
+        loadImportedPacks(this);
 
         //  Move to the MainMenu. You could also swap this for a Scene Transition, such as a camera fade.
         this.scene.start('MainMenu');

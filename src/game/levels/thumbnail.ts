@@ -22,7 +22,8 @@ type Source = CanvasImageSource;
 //  and reused after.
 export function levelThumbnail (scene: Scene, level: LevelInfo, maxWidth: number, maxHeight: number): string
 {
-    const key = `thumb-${level.key}-${maxWidth}x${maxHeight}`;
+    //  By file and position, so a level re-imported with new content gets a new picture
+    const key = `thumb-${level.file}#${level.index ?? 0}-${maxWidth}x${maxHeight}`;
     if (scene.textures.exists(key))
     {
         return key;
