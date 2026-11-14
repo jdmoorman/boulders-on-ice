@@ -2,7 +2,7 @@ import { Scene, Scenes, Input, GameObjects, Animations } from 'phaser';
 import { parseLevel, GridPoint } from '../levels/LevelParser';
 import { buildLevel, BuiltLevel, tileCenter, ySortDepth } from '../levels/LevelLoader';
 import type { Trap } from '../traps';
-import { LEVELS, isLastInPack } from '../levels/levelList';
+import { LEVELS, isLastInPack, levelText } from '../levels/levelList';
 import { markCompleted } from '../progress';
 import { clearLevelInProgress, fitsLevel, loadLevelInProgress, saveLevelInProgress } from '../levelInProgress';
 import { doorsOpen, resolveMove, Direction } from '../movement/Movement';
@@ -83,7 +83,7 @@ export class Game extends Scene
         this.cameras.main.setBackgroundColor(0x141a22);
 
         //  level.data.boulders holds live boulder positions, in the same order as level.boulders sprites
-        const data = parseLevel(this.levelText ?? this.cache.text.get(LEVELS[this.levelIndex].key));
+        const data = parseLevel(this.levelText ?? levelText(this, LEVELS[this.levelIndex]));
         this.facing = 'down';
         const saved = this.resume ? loadLevelInProgress() : null;
         let armedTraps: number[] = [];

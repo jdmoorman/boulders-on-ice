@@ -1,9 +1,15 @@
+import type { Scene } from 'phaser';
+import { LevelParseError, splitLevels } from './LevelParser';
+
 export interface LevelInfo
 {
-    //  Text cache key
+    //  Identifies the level, e.g. in saved progress
     key: string;
-    //  Path relative to public/assets
+    //  Path relative to public/assets. A file can hold several levels separated by blank lines
+    //  (see splitLevels); the Preloader loads each file once, into the text cache under its path.
     file: string;
+    //  Which level in the file, counting from 0 (default 0)
+    index?: number;
 }
 
 export interface LevelPack
@@ -72,4 +78,25 @@ export const LEVELS: readonly (LevelInfo & { pack: LevelPack, number: number })[
 export function isLastInPack (index: number): boolean
 {
     return LEVELS[index + 1]?.pack !== LEVELS[index].pack;
+}
+
+//  Each loaded file's levels, split once (some files hold hundreds)
+const splitFiles = new Map<string, string[]>();
+
+//  The text of a level, from its file in the text cache
+export function levelText (scene: Scene, level: LevelInfo): string
+{
+    let levels = splitFiles.get(level.file);
+    if (!levels)
+    {
+        levels = splitLevels(scene.cache.text.get(level.file) ?? '');
+        splitFiles.set(level.file, levels);
+    }
+    const index = level.index ?? 0;
+    const text = levels[index];
+    if (text === undefined)
+    {
+        throw new LevelParseError(`${level.file} has ${levels.length} level(s), so no level at index ${index}`);
+    }
+    return text;
 }

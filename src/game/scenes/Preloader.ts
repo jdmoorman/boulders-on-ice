@@ -48,9 +48,10 @@ export class Preloader extends Scene
         loadDoors(this);
         loadTraps(this);
 
-        for (const level of LEVELS)
+        //  Each level file once, under its path (a file can hold several levels)
+        for (const file of new Set(LEVELS.map(level => level.file)))
         {
-            this.load.text(level.key, level.file);
+            this.load.text(file, file);
         }
     }
 

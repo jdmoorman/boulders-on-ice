@@ -38,6 +38,37 @@ export interface LevelDraft extends Omit<LevelData, 'player'>
     player: GridPoint | null;
 }
 
+//  Splits a file into the text of each level in it. Levels are separated by at least one blank
+//  (empty) line; a line of spaces is a row of void, not a separator. Comment lines (starting
+//  with ';') stay with the level they're in, and a stretch with only comments isn't a level.
+//  A file with a single level gives that one level.
+export function splitLevels (text: string): string[]
+{
+    const levels: string[] = [];
+    let lines: string[] = [];
+    const finish = () =>
+    {
+        if (lines.some(line => !line.startsWith(';') && line.trim() !== ''))
+        {
+            levels.push(lines.join('\n') + '\n');
+        }
+        lines = [];
+    };
+    for (const line of text.replace(/\r\n?/g, '\n').split('\n'))
+    {
+        if (line === '')
+        {
+            finish();
+        }
+        else
+        {
+            lines.push(line);
+        }
+    }
+    finish();
+    return levels;
+}
+
 //  Parses an ASCII level. Lines starting with ';' are comments.
 //  Rows may differ in length: the map is as wide as the longest row, and
 //  shorter rows are padded on the right with void.

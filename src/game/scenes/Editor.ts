@@ -1,6 +1,6 @@
 import { Scene, Scenes, GameObjects, Input, Tilemaps } from 'phaser';
 import { cellKey, EditorLevel, EditorSnapshot, EditorTool } from '../editor/EditorLevel';
-import { parseLevelDraft, GridPoint, LevelParseError } from '../levels/LevelParser';
+import { parseLevelDraft, GridPoint, LevelParseError, splitLevels } from '../levels/LevelParser';
 import { isSouthFacingWall, TILE_SIZE, TileIndex } from '../levels/Tiles';
 import { AUTOTILE_SETS, AutotileSet, displayTileIndex, isTallSet } from '../levels/autotile';
 import { addBoulder, addDoor, addGoal, addPlate, addPlayer, addTallTile, addTrap, tileCenter } from '../levels/LevelLoader';
@@ -35,6 +35,7 @@ type SaveFilePicker = (options: {
 }) => Promise<{ name: string, createWritable (): Promise<{ write (data: string): Promise<void>, close (): Promise<void> }> }>;
 
 const STATE_KEY = 'editorState';
+const NOTICE_KEY = 'editorNotice';
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 2;
 const HISTORY_LIMIT = 1000;
@@ -176,6 +177,14 @@ export class Editor extends Scene
         });
 
         this.scene.launch('EditorHud');
+
+        //  A message left by loadLevel, shown once the HUD (launched above) is up
+        const notice = this.registry.get(NOTICE_KEY) as string | undefined;
+        if (notice)
+        {
+            this.registry.remove(NOTICE_KEY);
+            this.time.delayedCall(0, () => this.message(notice));
+        }
     }
 
     selectTool (tool: EditorTool)
@@ -289,13 +298,25 @@ export class Editor extends Scene
 
         try
         {
-            const data = parseLevelDraft(text);
+            //  A file of several levels opens its first. Saving writes one level, so it suggests
+            //  a new name rather than the file it came from.
+            const levels = splitLevels(text);
+            const data = parseLevelDraft(levels[0] ?? text);
             if (data.width > MAX_IMPORT_SIZE || data.height > MAX_IMPORT_SIZE)
             {
                 this.message(`${file.name} is larger than ${MAX_IMPORT_SIZE}x${MAX_IMPORT_SIZE} tiles.`);
                 return;
             }
-            this.loadLevel(EditorLevel.fromLevelData(data), file.name);
+            if (levels.length > 1)
+            {
+                const name = `${file.name.replace(/\.txt$/i, '')}-1.txt`;
+                this.loadLevel(EditorLevel.fromLevelData(data), name,
+                    `${file.name} has ${levels.length} levels; opened the first.`);
+            }
+            else
+            {
+                this.loadLevel(EditorLevel.fromLevelData(data), file.name);
+            }
         }
         catch (error)
         {
@@ -307,14 +328,16 @@ export class Editor extends Scene
         }
     }
 
-    //  Replaces the map, centred in view, with a fresh undo history
-    private loadLevel (level: EditorLevel, fileName: string)
+    //  Replaces the map, centred in view, with a fresh undo history, and shows `notice` (if
+    //  given) once the editor has restarted
+    private loadLevel (level: EditorLevel, fileName: string, notice?: string)
     {
         if (!this.scene.isActive())
         {
             return;
         }
         this.registry.set(STATE_KEY, { ...this.initialState(level, this.state.tool), fileName });
+        this.registry.set(NOTICE_KEY, notice);
         //  Skip the shutdown save, which would overwrite the new state
         this.skipSave = true;
         this.scene.restart();

@@ -332,7 +332,8 @@ export class EditorLevel
             {
                 line += this.charAt(x, y);
             }
-            lines.push(line.trimEnd());
+            //  A row of only void keeps one space, so it isn't a blank line (which separates levels)
+            lines.push(line.trimEnd() || ' ');
         }
         return lines.join('\n') + '\n';
     }

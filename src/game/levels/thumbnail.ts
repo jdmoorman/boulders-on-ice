@@ -1,6 +1,6 @@
 import { Scene, Textures } from 'phaser';
 import { parseLevel } from './LevelParser';
-import { LevelInfo } from './levelList';
+import { LevelInfo, levelText } from './levelList';
 import { TILE_SIZE } from './Tiles';
 import { AUTOTILE_SETS, autotileFrame, displayTileIndex, isTallSet } from './autotile';
 import { PLAYER_FRAME_HEIGHT, PLAYER_FRAME_WIDTH } from '../playerAnimations';
@@ -28,7 +28,7 @@ export function levelThumbnail (scene: Scene, level: LevelInfo, maxWidth: number
         return key;
     }
 
-    const data = parseLevel(scene.cache.text.get(level.key));
+    const data = parseLevel(levelText(scene, level));
     const { tiles } = data;
     const isTall = (set: typeof AUTOTILE_SETS[number]) => isTallSet(scene, set);
     const tallSets = AUTOTILE_SETS.filter(isTall);
