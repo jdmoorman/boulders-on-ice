@@ -12,7 +12,7 @@ import {
 //    'ice' images; walls come from an autotile sheet. All are scaled up to a tile.
 //  The player comes from player/openmon/set1-sheet3.png (see playerAnimations.ts), boulders from
 //  rock.png and the exit from ranitaya_wall_hole.png. The button icons other than undo and redo
-//  (drawn here) are images from assets/icons, loaded in the Preloader.
+//  (drawn here) are images from assets/ui/icons, loaded in the Preloader.
 export function generateTextures (scene: Scene): void
 {
     const S = TILE_SIZE;

@@ -46,11 +46,11 @@ export class Preloader extends Scene
         this.load.image('floor', 'floor/ranitaya_floor.png');
         this.load.image('ice', 'ice/buch_ice_muted.png');
         //  Button icons (undo and redo are drawn in textures.ts)
-        this.load.image('icon-pencil', 'icons/nikoichu_pencil.png');
-        this.load.image('icon-home', 'icons/ranitaya_home.png');
-        this.load.image('icon-gear', 'icons/ranitaya_settings.png');
-        this.load.image('icon-restart', 'icons/ranitaya_reset.png');
-        this.load.image('icon-lock', 'icons/ranitaya_lock.png');
+        this.load.image('icon-pencil', 'ui/icons/nikoichu_pencil.png');
+        this.load.image('icon-home', 'ui/icons/ranitaya_home.png');
+        this.load.image('icon-gear', 'ui/icons/ranitaya_settings.png');
+        this.load.image('icon-restart', 'ui/icons/ranitaya_reset.png');
+        this.load.image('icon-lock', 'ui/icons/ranitaya_lock.png');
         loadPlates(this);
         loadDoors(this);
         loadTraps(this);
