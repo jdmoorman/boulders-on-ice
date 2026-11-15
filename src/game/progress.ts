@@ -1,4 +1,5 @@
 import { LEVELS } from './levels/levelList';
+import { gameSettings } from './gameSettings';
 
 //  Which levels the player has completed, by level key, kept in localStorage so it survives
 //  reloads. Storage can be unavailable (private windows, blocked site data), so every access is
@@ -55,9 +56,13 @@ export function firstUncompletedLevel (): number
 }
 
 //  The first level of each pack is always unlocked; every other level unlocks once the level
-//  before it in the pack has been completed.
+//  before it in the pack has been completed. In dev mode every level is unlocked.
 export function isUnlocked (levelIndex: number): boolean
 {
+    if (gameSettings().devMode)
+    {
+        return true;
+    }
     const level = LEVELS[levelIndex];
     const previous = LEVELS[levelIndex - 1];
     return level.number === 1 || (previous !== undefined && load().has(previous.key));

@@ -13,7 +13,7 @@ const SETTINGS: readonly { key: keyof GameSettings, label: string, description: 
     {
         key: 'devMode',
         label: 'Dev mode',
-        description: 'Tools for working on the game.'
+        description: 'Unlocks every level.'
     }
 ];
 
