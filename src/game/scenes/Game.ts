@@ -7,6 +7,7 @@ import { markCompleted } from '../progress';
 import { clearLevelInProgress, fitsLevel, loadLevelInProgress, saveLevelInProgress } from '../levelInProgress';
 import { doorsOpen, resolveMove, Direction } from '../movement/Movement';
 import { MOVEMENT, PLATES } from '../settings';
+import { gameSettings } from '../gameSettings';
 import { playerAnimKey, PlayerAnimKind } from '../playerAnimations';
 import { LevelCompleteData } from './LevelComplete';
 import { updatePlates } from '../plates';
@@ -123,6 +124,16 @@ export class Game extends Scene
                 if (!otherKeyHeld && !this.levelComplete && !this.springing)
                 {
                     this.scene.restart(this.restartData());
+                }
+            });
+            //  Dev mode: N finishes the level on the spot (not with a modifier, like R)
+            keyboard.on('keydown-N', (event: KeyboardEvent) =>
+            {
+                if (gameSettings().devMode && !withModifier(event) && !this.isMoving && !this.levelComplete && !this.springing)
+                {
+                    this.levelComplete = true;
+                    this.playPlayerAnim('idle');
+                    this.completeLevel();
                 }
             });
             //  While playtesting, Esc goes straight back to the editor
