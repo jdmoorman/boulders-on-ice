@@ -1,7 +1,6 @@
 import { Scene } from 'phaser';
 import { addIconButton } from '../ui/Button';
 import { gameSettings } from '../gameSettings';
-import { leaveGame } from './Game';
 import type { Game } from './Game';
 
 //  Buttons over the level while it's played, in their own scene so they stay put while the
@@ -29,13 +28,11 @@ export class GameHud extends Scene
             }
         };
 
-        //  Top left, in a row: leave (to the main menu, or back to the editor when playtesting),
-        //  Settings, restart (like R), and in dev mode, outside playtests, copy the level into the
-        //  editor
+        //  Top left, in a row: leave (like Esc, back to the screen the level was started from; a
+        //  pencil when that's the editor), Settings, restart (like R), and in dev mode, outside
+        //  playtests, copy the level into the editor
         const buttons: [string, () => void][] = [
-            game.levelText
-                ? ['icon-edit', () => leaveGame(this, 'Editor')]
-                : ['icon-home', () => leaveGame(this, 'MainMenu')],
+            [game.levelText ? 'icon-edit' : 'icon-home', () => game.goBack()],
             ['icon-gear', () => game.openSettings()],
             ['icon-restart', () => game.restartLevel()],
             ...(gameSettings().devMode && !game.levelText ? [['icon-edit', () => game.copyToEditor()] as [string, () => void]] : [])

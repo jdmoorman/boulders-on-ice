@@ -1,6 +1,7 @@
 import { Scene } from 'phaser';
 import { addButton, TEXT_STYLE } from '../ui/Button';
 import { GameData, GameOrigin, leaveGame, withModifier } from './Game';
+import type { LevelSelectData } from './LevelSelect';
 
 export interface LevelCompleteData
 {
@@ -100,8 +101,9 @@ export class LevelComplete extends Scene
         leaveGame(this, 'Editor');
     }
 
+    //  After the last level of a pack: the list of packs, wherever the level was started from
     private toMenu ()
     {
-        leaveGame(this, 'MainMenu');
+        leaveGame(this, 'LevelSelect', {} satisfies LevelSelectData);
     }
 }

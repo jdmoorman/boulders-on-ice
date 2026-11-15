@@ -142,9 +142,9 @@ export class Game extends Scene
             : { levelIndex: this.levelIndex, from: this.from };
     }
 
-    //  Leaves the level for the screen it was started from. Level Select opens on the page of
-    //  the level's pack that holds it.
-    private goBack ()
+    //  Leaves the level for the screen it was started from (Esc and the HUD's home button).
+    //  Level Select opens on the page of the level's pack that holds it.
+    goBack ()
     {
         if (this.from === 'LevelSelect' && !this.levelText)
         {
