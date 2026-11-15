@@ -12,7 +12,16 @@ export interface ButtonSize
     height?: number;
 }
 
+export interface IconButtonOptions extends ButtonSize
+{
+    //  Draw the button as the pixel-art panel ('ui-panel', loaded in the Preloader) instead of a
+    //  flat rectangle. Size the button with PANEL_SIZE (see there) to keep the pixels even.
+    panel?: boolean;
+}
+
 const LABEL_KEY = 'label';
+//  Multiplied into the panel while the pointer is over it
+const PANEL_HOVER_TINT = 0xb8d0e8;
 
 //  The text label of a button made by addButton, e.g. to move or restyle it with the button
 export function buttonLabel (button: GameObjects.Rectangle): GameObjects.Text
@@ -59,6 +68,14 @@ export interface ButtonIcon
 }
 
 export const ICON_INSET = 8;
+//  The panel image's size, with room for a 16px icon in the middle. A panel button
+//  PANEL_SCALE times that draws the panel and a 16px icon at the same whole-number scale.
+const PANEL_PIXELS = 24;
+const PANEL_ICON_PIXELS = 16;
+const PANEL_SCALE = 3;
+export const PANEL_SIZE = PANEL_PIXELS * PANEL_SCALE;
+//  The margin around the icon, as a fraction of the panel
+const PANEL_BORDER = (PANEL_PIXELS - PANEL_ICON_PIXELS) / 2 / PANEL_PIXELS;
 
 //  Adds a clickable rectangle button showing images instead of a label. The icons are drawn in
 //  order, each scaled to fit inside the button without stretching.
@@ -68,23 +85,42 @@ export function addIconButton (
     y: number,
     icons: readonly ButtonIcon[],
     onClick: () => void,
-    { width = 64, height = 64 }: ButtonSize = {}
+    { width = 64, height = 64, panel = false }: IconButtonOptions = {}
 ): GameObjects.Rectangle
 {
-    const button = scene.add.rectangle(x, y, width, height, FILL)
-        .setStrokeStyle(3, 0x000000)
+    //  With a panel, the rectangle is only the (invisible) clickable area
+    const panelImage = panel ? scene.add.image(x, y, 'ui-panel').setDisplaySize(width, height) : null;
+    const button = scene.add.rectangle(x, y, width, height, FILL, panel ? 0 : 1)
         .setInteractive({ useHandCursor: true });
+    if (!panel)
+    {
+        button.setStrokeStyle(3, 0x000000);
+    }
 
     const images = icons.map(({ key, frame, scale }) =>
     {
         const image = scene.add.image(x, y, key, frame);
-        const fit = Math.min((width - ICON_INSET * 2) / image.width, (height - ICON_INSET * 2) / image.height);
+        const insetX = panel ? width * PANEL_BORDER : ICON_INSET;
+        const insetY = panel ? height * PANEL_BORDER : ICON_INSET;
+        const fit = Math.min((width - insetX * 2) / image.width, (height - insetY * 2) / image.height);
         return image.setScale(scale ?? fit);
     });
-    button.once(GameObjects.Events.DESTROY, () => images.forEach(image => image.destroy()));
+    button.once(GameObjects.Events.DESTROY, () =>
+    {
+        images.forEach(image => image.destroy());
+        panelImage?.destroy();
+    });
 
-    button.on('pointerover', () => button.setFillStyle(FILL_HOVER));
-    button.on('pointerout', () => button.setFillStyle(FILL));
+    if (panelImage)
+    {
+        button.on('pointerover', () => panelImage.setTint(PANEL_HOVER_TINT));
+        button.on('pointerout', () => panelImage.clearTint());
+    }
+    else
+    {
+        button.on('pointerover', () => button.setFillStyle(FILL_HOVER));
+        button.on('pointerout', () => button.setFillStyle(FILL));
+    }
     button.on('pointerup', onClick);
 
     return button;

@@ -1,5 +1,5 @@
 import { Scene, Scenes, GameObjects, Time } from 'phaser';
-import { addButton, addIconButton, ButtonIcon, TEXT_STYLE } from '../ui/Button';
+import { addButton, addIconButton, ButtonIcon, PANEL_SIZE, TEXT_STYLE } from '../ui/Button';
 import { TileIndex } from '../levels/Tiles';
 import { AUTOTILE_SETS, ISOLATED_FRAME } from '../levels/autotile';
 import { EditorTool } from '../editor/EditorLevel';
@@ -82,15 +82,17 @@ export class EditorHud extends Scene
         const { width, height } = this.scale;
 
         //  Top bar: Menu, Undo and Redo on the left; Import, Export and Play on the right
-        this.add.rectangle(0, 0, width, 72, BAR_COLOR, 0.92).setOrigin(0).setInteractive();
-        const top = 36;
-        //  Tall enough for a 16px icon at 3x inside the inset (see ICON_INSET), like the game's HUD
-        const size = { height: 64 };
+        //  A little taller than the buttons in it
+        const barHeight = PANEL_SIZE + 8;
+        this.add.rectangle(0, 0, width, barHeight, BAR_COLOR, 0.92).setOrigin(0).setInteractive();
+        const top = barHeight / 2;
+        //  The icon buttons' size (see PANEL_SIZE), so the whole row is the same height
+        const size = { height: PANEL_SIZE };
         addButton(this, 80, top, 'Menu', () => this.editor.toMainMenu(), { ...size, width: 130 });
-        addIconButton(this, 200, top, [{ key: 'icon-undo' }], () => this.editor.undo(), { ...size, width: 72 });
-        addIconButton(this, 286, top, [{ key: 'icon-redo' }], () => this.editor.redo(), { ...size, width: 72 });
+        addIconButton(this, 200, top, [{ key: 'icon-undo' }], () => this.editor.undo(), { ...size, width: PANEL_SIZE, panel: true });
+        addIconButton(this, 286, top, [{ key: 'icon-redo' }], () => this.editor.redo(), { ...size, width: PANEL_SIZE, panel: true });
         this.analyzeButton = addButton(this, 440, top, 'Analyze', () => this.editor.toggleAnalysis(), { ...size, width: 160 });
-        addIconButton(this, 562, top, [{ key: 'icon-gear' }], () => this.openOptions(), { ...size, width: 72 });
+        addIconButton(this, 562, top, [{ key: 'icon-gear' }], () => this.openOptions(), { ...size, width: PANEL_SIZE, panel: true });
         addButton(this, 674, top, 'Import', () => this.editor.importLevel(), { ...size, width: 140 });
         addButton(this, 822, top, 'Export', () => this.editor.exportLevel(), { ...size, width: 140 });
         addButton(this, 958, top, 'Play', () => this.editor.play(), { ...size, width: 116 });

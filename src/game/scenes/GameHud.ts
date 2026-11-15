@@ -1,11 +1,11 @@
 import { Scene } from 'phaser';
-import { addIconButton } from '../ui/Button';
+import { addIconButton, PANEL_SIZE } from '../ui/Button';
 import { gameSettings } from '../gameSettings';
 import type { Game } from './Game';
 
 //  Buttons over the level while it's played, in their own scene so they stay put while the
 //  camera follows the player. The Game scene launches it and stops it on leaving.
-export const HUD_BUTTON_SIZE = 64;
+export const HUD_BUTTON_SIZE = PANEL_SIZE;
 export const HUD_MARGIN = 16;
 const HUD_GAP = 12;
 
@@ -41,7 +41,7 @@ export class GameHud extends Scene
         {
             const x = HUD_MARGIN + HUD_BUTTON_SIZE / 2 + i * (HUD_BUTTON_SIZE + HUD_GAP);
             addIconButton(this, x, HUD_MARGIN + HUD_BUTTON_SIZE / 2, [{ key: icon }], whenPlaying(action),
-                { width: HUD_BUTTON_SIZE, height: HUD_BUTTON_SIZE });
+                { width: HUD_BUTTON_SIZE, height: HUD_BUTTON_SIZE, panel: true });
         });
     }
 }
