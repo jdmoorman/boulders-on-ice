@@ -9,7 +9,7 @@ import { doorsOpen, resolveMove, Direction } from '../movement/Movement';
 import { MOVEMENT, PLATES } from '../settings';
 import { gameSettings } from '../gameSettings';
 import { TEXT_STYLE } from '../ui/Button';
-import { HUD_BUTTON_SIZE, HUD_MARGIN } from './GameHud';
+import { HUD_MARGIN, HUD_RIGHT } from './GameHud';
 import { replayMoves } from '../movement/replay';
 import { drawRoute } from '../levels/routeDrawing';
 import type { AnalysisMessage, AnalysisRequest } from '../editor/analysisShared';
@@ -96,6 +96,13 @@ export class Game extends Scene
         }
     }
 
+    //  Pauses the level and opens the Settings popup over it (see SettingsPopup), from the HUD
+    openSettings ()
+    {
+        this.scene.pause();
+        this.scene.launch('Settings');
+    }
+
     private restartData (): GameData
     {
         return this.levelText ? { levelText: this.levelText } : { levelIndex: this.levelIndex };
@@ -127,8 +134,8 @@ export class Game extends Scene
         this.saveProgress();
 
         this.routeGraphics = this.add.graphics().setDepth(ROUTE_DEPTH);
-        //  Right of the HUD's restart button
-        this.devNote = this.add.text(HUD_MARGIN * 2 + HUD_BUTTON_SIZE, HUD_MARGIN, '', { ...TEXT_STYLE, fontSize: 20, strokeThickness: 5 })
+        //  Right of the HUD's buttons
+        this.devNote = this.add.text(HUD_RIGHT + HUD_MARGIN, HUD_MARGIN, '', { ...TEXT_STYLE, fontSize: 20, strokeThickness: 5 })
             .setScrollFactor(0)
             .setDepth(ROUTE_DEPTH);
         this.solver = null;
@@ -182,7 +189,7 @@ export class Game extends Scene
             //  Keys released while paused can still read as held; clear them so the player
             //  doesn't walk on their own after resuming.
             //  Scene events outlive restarts, so remove the listener on shutdown.
-            //  Dev mode may have been switched in the pause menu's Settings, so redraw the route too.
+            //  Redraw the route too, in case a setting changed while paused.
             const onResume = () =>
             {
                 keyboard.resetKeys();

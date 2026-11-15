@@ -6,6 +6,10 @@ import type { Game } from './Game';
 //  camera follows the player. The Game scene launches it and stops it on leaving.
 export const HUD_BUTTON_SIZE = 64;
 export const HUD_MARGIN = 16;
+const HUD_GAP = 12;
+const BUTTON_COUNT = 2;
+//  Where the row of buttons ends, for anything placed beside it
+export const HUD_RIGHT = HUD_MARGIN + BUTTON_COUNT * HUD_BUTTON_SIZE + (BUTTON_COUNT - 1) * HUD_GAP;
 
 export class GameHud extends Scene
 {
@@ -17,16 +21,25 @@ export class GameHud extends Scene
     create ()
     {
         const game = this.scene.get('Game') as Game;
-        const half = HUD_BUTTON_SIZE / 2;
-
-        //  Restart, top left: the same as pressing R
-        addIconButton(this, HUD_MARGIN + half, HUD_MARGIN + half, [{ key: 'icon-restart' }], () =>
+        //  Not while the level is paused (the pause menu or Settings is over it)
+        const whenPlaying = (action: () => void) => () =>
         {
-            //  Not while the pause menu is over the level
             if (!this.scene.isPaused('Game'))
             {
-                game.restartLevel();
+                action();
             }
-        }, { width: HUD_BUTTON_SIZE, height: HUD_BUTTON_SIZE });
+        };
+
+        //  Top left, in a row: restart (like R) and Settings
+        const buttons: [string, () => void][] = [
+            ['icon-restart', () => game.restartLevel()],
+            ['icon-gear', () => game.openSettings()]
+        ];
+        buttons.forEach(([icon, action], i) =>
+        {
+            const x = HUD_MARGIN + HUD_BUTTON_SIZE / 2 + i * (HUD_BUTTON_SIZE + HUD_GAP);
+            addIconButton(this, x, HUD_MARGIN + HUD_BUTTON_SIZE / 2, [{ key: icon }], whenPlaying(action),
+                { width: HUD_BUTTON_SIZE, height: HUD_BUTTON_SIZE });
+        });
     }
 }
