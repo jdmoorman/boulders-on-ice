@@ -1,6 +1,7 @@
 import { Scene, Scenes, Input, GameObjects, Animations } from 'phaser';
 import { parseLevel, GridPoint } from '../levels/LevelParser';
 import { buildLevel, BuiltLevel, tileCenter, ySortDepth } from '../levels/LevelLoader';
+import { TileIndex } from '../levels/Tiles';
 import type { Trap } from '../traps';
 import { LEVEL_PACKS, LEVELS, isLastInPack, levelText } from '../levels/levelList';
 import { LEVELS_PER_PAGE, LevelSelectData } from './LevelSelect';
@@ -11,7 +12,7 @@ import { MOVEMENT, PLATES } from '../settings';
 import { gameSettings } from '../gameSettings';
 import { TEXT_STYLE } from '../ui/Button';
 import { HUD_MARGIN, HUD_RIGHT } from './GameHud';
-import { replayMoves } from '../movement/replay';
+import { PathSegment, replayMoves } from '../movement/replay';
 import { drawRoute } from '../levels/routeDrawing';
 import type { AnalysisMessage, AnalysisRequest } from '../editor/analysisShared';
 import { playerAnimKey, PlayerAnimKind } from '../playerAnimations';
@@ -534,7 +535,7 @@ export class Game extends Scene
             this.hintReady = true;
             if (m.solution)
             {
-                drawRoute(this.routeGraphics, level.player, replayMoves(level, m.solution, armedTraps));
+                drawRoute(this.routeGraphics, level.player, this.untilMoveThatCounts(replayMoves(level, m.solution, armedTraps)));
             }
             else
             {
@@ -550,6 +551,20 @@ export class Game extends Scene
         const request: AnalysisRequest = { level, freeSnowWalking: false, solve: true, armedTraps };
         worker.postMessage(request);
         this.solver = worker;
+    }
+
+    //  The start of a route, up to and including its first move that counts: any number of steps
+    //  from snow to snow, then one slide, step on or off ice, push, step onto a trap or into the
+    //  exit (the same moves the editor's free snow walking counts)
+    private untilMoveThatCounts (segments: PathSegment[]): PathSegment[]
+    {
+        const { tiles, traps } = this.level.data;
+        const isSnow = (p: GridPoint) => tiles[p.y]?.[p.x] === TileIndex.Floor;
+        const isTrap = (p: GridPoint) => traps.some(t => t.x === p.x && t.y === p.y);
+        const free = ({ kind, cells }: PathSegment) =>
+            kind === 'player' && cells.length === 2 && isSnow(cells[0]) && isSnow(cells[1]) && !isTrap(cells[1]);
+        const counts = segments.findIndex(segment => !free(segment));
+        return counts < 0 ? segments : segments.slice(0, counts + 1);
     }
 
     //  Stops any solution search and clears the route
