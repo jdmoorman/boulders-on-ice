@@ -9,6 +9,7 @@ import { doorsOpen, resolveMove, Direction } from '../movement/Movement';
 import { MOVEMENT, PLATES } from '../settings';
 import { gameSettings } from '../gameSettings';
 import { TEXT_STYLE } from '../ui/Button';
+import { HUD_BUTTON_SIZE, HUD_MARGIN } from './GameHud';
 import { replayMoves } from '../movement/replay';
 import { drawRoute } from '../levels/routeDrawing';
 import type { AnalysisMessage, AnalysisRequest } from '../editor/analysisShared';
@@ -85,6 +86,16 @@ export class Game extends Scene
     }
 
     //  Data that starts this same level again
+    //  Starts the level over, as R and the HUD's restart button do; not once it's complete or
+    //  while a trap springs
+    restartLevel ()
+    {
+        if (!this.levelComplete && !this.springing)
+        {
+            this.scene.restart(this.restartData());
+        }
+    }
+
     private restartData (): GameData
     {
         return this.levelText ? { levelText: this.levelText } : { levelIndex: this.levelIndex };
@@ -116,7 +127,8 @@ export class Game extends Scene
         this.saveProgress();
 
         this.routeGraphics = this.add.graphics().setDepth(ROUTE_DEPTH);
-        this.devNote = this.add.text(16, 16, '', { ...TEXT_STYLE, fontSize: 20, strokeThickness: 5 })
+        //  Right of the HUD's restart button
+        this.devNote = this.add.text(HUD_MARGIN * 2 + HUD_BUTTON_SIZE, HUD_MARGIN, '', { ...TEXT_STYLE, fontSize: 20, strokeThickness: 5 })
             .setScrollFactor(0)
             .setDepth(ROUTE_DEPTH);
         this.solver = null;
@@ -126,7 +138,9 @@ export class Game extends Scene
             //  changing a destroyed Text throws
             this.solver?.terminate();
             this.solver = null;
+            this.scene.stop('GameHud');
         });
+        this.scene.launch('GameHud');
         this.showSolution();
 
         const keyboard = this.input.keyboard;
@@ -146,9 +160,9 @@ export class Game extends Scene
             keyboard.on('keydown-R', (event: KeyboardEvent) =>
             {
                 const otherKeyHeld = withModifier(event) || this.heldDirection() !== null;
-                if (!otherKeyHeld && !this.levelComplete && !this.springing)
+                if (!otherKeyHeld)
                 {
-                    this.scene.restart(this.restartData());
+                    this.restartLevel();
                 }
             });
             //  Dev mode: N finishes the level on the spot (not with a modifier, like R)
