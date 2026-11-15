@@ -45,6 +45,12 @@ export class Preloader extends Scene
         this.load.image('wallAutotile', 'walls/ranitayas_autotile_wall.png');
         this.load.image('floor', 'floor/ranitayas_floor.png');
         this.load.image('ice', 'ice/buch_ice_muted.png');
+        //  Button icons (undo and redo are drawn in textures.ts)
+        this.load.image('icon-pencil', 'icons/nikoichu_pencil.png');
+        this.load.image('icon-home', 'icons/ranitayas_home.png');
+        this.load.image('icon-gear', 'icons/ranitayas_settings.png');
+        this.load.image('icon-restart', 'icons/ranitayas_reset.png');
+        this.load.image('icon-lock', 'icons/ranitayas_lock.png');
         loadPlates(this);
         loadDoors(this);
         loadTraps(this);
@@ -61,7 +67,8 @@ export class Preloader extends Scene
         //  When all the assets have loaded, it's often worth creating global objects here that the rest of the game can use.
         //  For example, you can define global animations here, so we can use them in other scenes.
         //  Keep the scaled-up pixel art sharp (only these textures; others still smooth)
-        for (const key of ['player', 'boulder', 'goal', 'floor', 'plate-press', 'plate-unpress', 'door-open', 'door-close', 'trap'])
+        for (const key of ['player', 'boulder', 'goal', 'floor', 'plate-press', 'plate-unpress', 'door-open', 'door-close', 'trap',
+            'icon-pencil', 'icon-home', 'icon-gear', 'icon-restart', 'icon-lock'])
         {
             this.textures.get(key).setFilter(Textures.FilterMode.NEAREST);
         }

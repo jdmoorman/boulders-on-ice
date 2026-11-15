@@ -84,7 +84,8 @@ export class EditorHud extends Scene
         //  Top bar: Menu, Undo and Redo on the left; Import, Export and Play on the right
         this.add.rectangle(0, 0, width, 72, BAR_COLOR, 0.92).setOrigin(0).setInteractive();
         const top = 36;
-        const size = { height: 52 };
+        //  Tall enough for a 16px icon at 3x inside the inset (see ICON_INSET), like the game's HUD
+        const size = { height: 64 };
         addButton(this, 80, top, 'Menu', () => this.editor.toMainMenu(), { ...size, width: 130 });
         addIconButton(this, 200, top, [{ key: 'icon-undo' }], () => this.editor.undo(), { ...size, width: 72 });
         addIconButton(this, 286, top, [{ key: 'icon-redo' }], () => this.editor.redo(), { ...size, width: 72 });

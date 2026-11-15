@@ -32,10 +32,10 @@ export class GameHud extends Scene
         //  pencil when that's the editor), Settings, restart (like R), and in dev mode, outside
         //  playtests, copy the level into the editor
         const buttons: [string, () => void][] = [
-            [game.levelText ? 'icon-edit' : 'icon-home', () => game.goBack()],
+            [game.levelText ? 'icon-pencil' : 'icon-home', () => game.goBack()],
             ['icon-gear', () => game.openSettings()],
             ['icon-restart', () => game.restartLevel()],
-            ...(gameSettings().devMode && !game.levelText ? [['icon-edit', () => game.copyToEditor()] as [string, () => void]] : [])
+            ...(gameSettings().devMode && !game.levelText ? [['icon-pencil', () => game.copyToEditor()] as [string, () => void]] : [])
         ];
         buttons.forEach(([icon, action], i) =>
         {

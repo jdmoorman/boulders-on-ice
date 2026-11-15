@@ -197,7 +197,7 @@ export class LevelSelect extends Scene
             {
                 button.disableInteractive();
                 this.add.rectangle(x, y, CELL_W, CELL_H, 0x000000, 0.55);
-                this.add.image(x, y, 'icon-lock');
+                this.add.image(x, y, 'icon-lock').setScale(3);
             }
         });
 
