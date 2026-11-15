@@ -82,6 +82,8 @@ export function generateTextures (scene: Scene): void
     addArrowTexture(scene, 'icon-undo', false);
     addArrowTexture(scene, 'icon-redo', true);
     addRestartTexture(scene);
+    addHomeTexture(scene);
+    addEditTexture(scene);
     addLockTexture(scene);
     addGearTexture(scene);
 }
@@ -246,6 +248,73 @@ function addRestartTexture (scene: Scene): void
     c.fill();
 
     texture.refresh();
+}
+
+//  Draws an icon white with a black outline, like the others: `shape` adds the path, which is
+//  stroked thick in black, then filled and stroked thin in white
+function addOutlinedIcon (scene: Scene, key: string, shape: (c: CanvasRenderingContext2D) => void): void
+{
+    const size = 48;
+    const texture = scene.textures.createCanvas(key, size, size);
+    if (!texture)
+    {
+        throw new Error(`Could not create canvas texture '${key}'`);
+    }
+    const c = texture.context;
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+
+    c.strokeStyle = '#000000';
+    c.lineWidth = 7;
+    shape(c);
+    c.stroke();
+
+    c.fillStyle = '#ffffff';
+    c.strokeStyle = '#ffffff';
+    c.lineWidth = 2;
+    shape(c);
+    c.fill();
+    c.stroke();
+
+    texture.refresh();
+}
+
+//  'icon-home': a house, for leaving the level to the main menu
+function addHomeTexture (scene: Scene): void
+{
+    addOutlinedIcon(scene, 'icon-home', c =>
+    {
+        c.beginPath();
+        //  Roof and walls in one outline, with a door cut into the bottom
+        c.moveTo(24, 7);
+        c.lineTo(42, 23);
+        c.lineTo(37, 23);
+        c.lineTo(37, 41);
+        c.lineTo(28, 41);
+        c.lineTo(28, 31);
+        c.lineTo(20, 31);
+        c.lineTo(20, 41);
+        c.lineTo(11, 41);
+        c.lineTo(11, 23);
+        c.lineTo(6, 23);
+        c.closePath();
+    });
+}
+
+//  'icon-edit': a pencil, for going back to the editor from a playtest
+function addEditTexture (scene: Scene): void
+{
+    addOutlinedIcon(scene, 'icon-edit', c =>
+    {
+        c.beginPath();
+        //  A slanted pencil, its point at the bottom left
+        c.moveTo(8, 40);
+        c.lineTo(11, 30);
+        c.lineTo(32, 9);
+        c.lineTo(39, 16);
+        c.lineTo(18, 37);
+        c.closePath();
+    });
 }
 
 function addArrowTexture (scene: Scene, key: string, mirrored: boolean): void

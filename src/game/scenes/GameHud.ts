@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import { addIconButton } from '../ui/Button';
+import { leaveGame } from './Game';
 import type { Game } from './Game';
 
 //  Buttons over the level while it's played, in their own scene so they stay put while the
@@ -7,7 +8,7 @@ import type { Game } from './Game';
 export const HUD_BUTTON_SIZE = 64;
 export const HUD_MARGIN = 16;
 const HUD_GAP = 12;
-const BUTTON_COUNT = 2;
+const BUTTON_COUNT = 3;
 //  Where the row of buttons ends, for anything placed beside it
 export const HUD_RIGHT = HUD_MARGIN + BUTTON_COUNT * HUD_BUTTON_SIZE + (BUTTON_COUNT - 1) * HUD_GAP;
 
@@ -30,10 +31,14 @@ export class GameHud extends Scene
             }
         };
 
-        //  Top left, in a row: restart (like R) and Settings
+        //  Top left, in a row: restart (like R), Settings, and leave: to the main menu, or back to
+        //  the editor when playtesting
         const buttons: [string, () => void][] = [
             ['icon-restart', () => game.restartLevel()],
-            ['icon-gear', () => game.openSettings()]
+            ['icon-gear', () => game.openSettings()],
+            game.levelText
+                ? ['icon-edit', () => leaveGame(this, 'Editor')]
+                : ['icon-home', () => leaveGame(this, 'MainMenu')]
         ];
         buttons.forEach(([icon, action], i) =>
         {
