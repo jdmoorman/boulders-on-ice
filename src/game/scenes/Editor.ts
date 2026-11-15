@@ -1,4 +1,4 @@
-import { Scene, Scenes, GameObjects, Input, Tilemaps } from 'phaser';
+import { Scene, Scenes, GameObjects, Input, Tilemaps, Time } from 'phaser';
 import { cellKey, EditorLevel, EditorSnapshot, EditorTool } from '../editor/EditorLevel';
 import { parseLevelDraft, GridPoint, LevelParseError, splitLevels } from '../levels/LevelParser';
 import { isSouthFacingWall, TILE_SIZE, TileIndex } from '../levels/Tiles';
@@ -38,6 +38,56 @@ type SaveFilePicker = (options: {
 const STATE_KEY = 'editorState';
 const NOTICE_KEY = 'editorNotice';
 const COPY_KEY = 'editorCopy';
+
+//  The editor's level, kept in localStorage so it survives a reload (the undo history and view
+//  aren't kept). Saved shortly after each change and when the page is hidden or closed. Storage
+//  can be unavailable (private windows, blocked site data), so every access is guarded.
+const SAVED_LEVEL_KEY = 'bouldersAndIce.editorLevel';
+const SAVE_DELAY_MS = 500;
+
+interface SavedEditorLevel
+{
+    //  The level in the .txt format; empty for an empty canvas
+    text: string;
+    fileName: string;
+    tool: EditorTool;
+}
+
+function saveEditorLevel (state: EditorState): void
+{
+    try
+    {
+        const saved: SavedEditorLevel = { text: state.level.toText() ?? '', fileName: state.fileName, tool: state.tool };
+        localStorage.setItem(SAVED_LEVEL_KEY, JSON.stringify(saved));
+    }
+    catch
+    {
+        //  Can't save; the level is still kept until the page is reloaded
+    }
+}
+
+//  The saved level, or null if there isn't one or it can't be read
+function loadEditorLevel (): { level: EditorLevel, fileName: string, tool: EditorTool } | null
+{
+    try
+    {
+        const saved = JSON.parse(localStorage.getItem(SAVED_LEVEL_KEY) ?? 'null') as Partial<SavedEditorLevel> | null;
+        if (!saved || typeof saved.text !== 'string')
+        {
+            return null;
+        }
+        return {
+            level: saved.text ? EditorLevel.fromLevelData(parseLevelDraft(saved.text)) : new EditorLevel(),
+            fileName: typeof saved.fileName === 'string' && saved.fileName ? saved.fileName : DEFAULT_FILE_NAME,
+            tool: [...PALETTE, 'erase', 'erase-entity'].includes(saved.tool as EditorTool) ? saved.tool as EditorTool : 'wall'
+        };
+    }
+    catch
+    {
+        //  Unreadable or unavailable (a level that no longer parses is dropped too)
+        return null;
+    }
+}
 
 //  Whether the editor has a level in it (anything painted), which a copied level would replace
 export function editorHasLevel (scene: Scene): boolean
@@ -103,6 +153,8 @@ export class Editor extends Scene
     private pending: EditorSnapshot | null = null;
     //  Set when the registry already holds the state to start from next time
     private skipSave = false;
+    //  Saves the level to localStorage after a change (see saveEditorLevel), once changes stop
+    private saveTimer: Time.TimerEvent | null = null;
     //  The background reachability search, and analysis mode's overlay: move counts on reached
     //  tiles, unreachable tiles dimmed, and the route to the hovered tile
     private analysis: EditorAnalysis;
@@ -156,12 +208,22 @@ export class Editor extends Scene
         this.hoverCell = null;
         this.settings = loadEditorSettings();
         this.inputLocked = false;
+        this.saveTimer = null;
 
         const camera = this.cameras.main;
         camera.setBackgroundColor(0x141a22);
 
         this.takeCopiedLevel();
-        const saved = this.registry.get(STATE_KEY) as EditorState | undefined;
+        //  After a reload, the level saved in localStorage
+        let saved = this.registry.get(STATE_KEY) as EditorState | undefined;
+        if (!saved)
+        {
+            const stored = loadEditorLevel();
+            if (stored)
+            {
+                saved = { ...this.initialState(stored.level, stored.tool), fileName: stored.fileName };
+            }
+        }
         this.state = saved ?? this.initialState(new EditorLevel(), 'wall');
         this.state.fileName ??= DEFAULT_FILE_NAME;
         this.state.undo ??= [];
@@ -176,11 +238,22 @@ export class Editor extends Scene
         this.analysis = new EditorAnalysis(tiles => this.onAnalysisUpdate(tiles));
         this.analysis.restart(this.state.level, this.settings.freeSnowWalking, 0);
 
+        //  A new level (opened, imported or copied in) is saved straight away. Leaving the page
+        //  saves any change still waiting on the timer.
+        saveEditorLevel(this.state);
+        const saveNow = () => this.saveNow();
+        window.addEventListener('pagehide', saveNow);
+
         //  Keep the editor's state for next time, and take the HUD down with the editor
         this.events.once(Scenes.Events.SHUTDOWN, () =>
         {
+            window.removeEventListener('pagehide', saveNow);
             this.scene.stop('EditorHud');
             this.analysis.destroy();
+            if (!this.skipSave)
+            {
+                this.saveNow();
+            }
             if (this.skipSave)
             {
                 return;
@@ -258,6 +331,22 @@ export class Editor extends Scene
         }
         to.push(this.state.level.snapshot());
         this.redrawCells(this.state.level.restore(snapshot));
+        this.saveSoon();
+    }
+
+    //  Saves the level once there have been no changes for SAVE_DELAY_MS, so a drag isn't
+    //  saved on every cell
+    private saveSoon ()
+    {
+        this.saveTimer?.remove();
+        this.saveTimer = this.time.delayedCall(SAVE_DELAY_MS, () => this.saveNow());
+    }
+
+    private saveNow ()
+    {
+        this.saveTimer?.remove();
+        this.saveTimer = null;
+        saveEditorLevel(this.state);
     }
 
     //  Starts a playtest of the current map, or reports why it can't be played
@@ -598,6 +687,10 @@ export class Editor extends Scene
             }
             this.state.redo.length = 0;
             this.pending = null;
+        }
+        if (changed.length > 0)
+        {
+            this.saveSoon();
         }
         this.redrawCells(changed);
     }
