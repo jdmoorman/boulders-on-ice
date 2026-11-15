@@ -13,7 +13,7 @@ const SETTINGS: readonly { key: keyof GameSettings, label: string, description: 
     {
         key: 'devMode',
         label: 'Dev mode',
-        description: 'Unlocks every level, and N finishes the level.'
+        description: 'Unlocks every level, shows the solution route,\nand N finishes the level.'
     }
 ];
 

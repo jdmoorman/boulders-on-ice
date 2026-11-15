@@ -26,7 +26,7 @@ const PROGRESS_MS = 100;
 const CHECK_EVERY = 1000;
 
 addEventListener('message', (event: MessageEvent<AnalysisRequest>) =>
-    analyze(event.data.level, event.data.freeSnowWalking));
+    analyze(event.data.level, event.data.freeSnowWalking, event.data.solve ?? false, event.data.armedTraps ?? []));
 
 //  The best way found so far to reach a tile: from a position, plus the final move when the tile
 //  is passed through (or is the exit) rather than stood on
@@ -37,7 +37,8 @@ interface Candidate
     last?: Direction;
 }
 
-function analyze (level: LevelData, freeSnowWalking: boolean): void
+//  solve: stop at the cheapest solution rather than search for every tile (see AnalysisRequest)
+function analyze (level: LevelData, freeSnowWalking: boolean, solve: boolean, armedTraps: readonly number[]): void
 {
     const { width, tiles } = level;
     const cellOf = (p: GridPoint) => p.y * width + p.x;
@@ -53,6 +54,14 @@ function analyze (level: LevelData, freeSnowWalking: boolean): void
     //  Per position, one character per trap: '1' if armed
     const armed: string[] = [];
     const trapIndex = new Map(level.traps.map((t, i) => [cellOf(t), i]));
+    //  For solving: the exit's cell, or the plates that need boulders in a level without one
+    const goalCell = level.goal ? cellOf(level.goal) : null;
+    const plateCells = level.plates.map(cellOf);
+    const solvable = goalCell !== null || plateCells.length > 0 || level.traps.length > 0;
+    let solution: string | null = null;
+    //  Whether a position with these boulders and traps solves a level without an exit
+    const isSolved = (cells: readonly number[], traps: string) =>
+        goalCell === null && !traps.includes('0') && plateCells.every(p => cells.includes(p));
     const parents: number[] = [];
     const moves: number[] = [];
     const costs: number[] = [];
@@ -145,7 +154,7 @@ function analyze (level: LevelData, freeSnowWalking: boolean): void
     {
         const message: AnalysisMessage = {
             states: players.length, depth: costOf, found: found.size, possible: possible.size,
-            tiles: pending, done, complete
+            tiles: pending, done, complete, ...(solve && done ? { solution } : {})
         };
         postMessage(message);
         pending = [];
@@ -153,7 +162,18 @@ function analyze (level: LevelData, freeSnowWalking: boolean): void
 
     //  The cost being explored
     let costOf = 0;
-    addState(cellOf(level.player), level.boulders.map(cellOf).sort((a, b) => a - b), '0'.repeat(level.traps.length), -1, 0, 0);
+    const startTraps = level.traps.map((_t, i) => armedTraps.includes(i) ? '1' : '0').join('');
+    addState(cellOf(level.player), level.boulders.map(cellOf).sort((a, b) => a - b), startTraps, -1, 0, 0);
+    //  The exit is found once it's settled (no cheaper way can turn up)
+    const exitFound = () =>
+    {
+        if (solve && goalCell !== null && found.has(goalCell))
+        {
+            solution = found.get(goalCell)!;
+            return true;
+        }
+        return false;
+    };
 
     //  One LevelData reused for every position, with its boulders swapped in
     const data: LevelData = { ...level, boulders: [] };
@@ -166,6 +186,10 @@ function analyze (level: LevelData, freeSnowWalking: boolean): void
     {
         //  Tiles slid through for this cost while exploring the cost before
         finalize(costOf);
+        if (exitFound() || (solve && !solvable))
+        {
+            break search;
+        }
         for (let i = 0; i < current.length; i++)
         {
             const s = current[i];
@@ -179,7 +203,13 @@ function analyze (level: LevelData, freeSnowWalking: boolean): void
             {
                 settle(players[s], { cost: costOf, from: s });
             }
-            if (found.size >= possible.size)
+            //  Positions come out cheapest first, so the first solved one is a cheapest solution
+            if (solve && isSolved(boulders[s], armed[s]))
+            {
+                solution = movesTo(s);
+                break search;
+            }
+            if (!solve && found.size >= possible.size)
             {
                 break search;
             }
@@ -266,12 +296,17 @@ function analyze (level: LevelData, freeSnowWalking: boolean): void
 
         //  Exits reached for free at this cost can't get cheaper either
         finalize(costOf);
+        if (exitFound())
+        {
+            break search;
+        }
         current = next;
         next = [];
         costOf++;
     }
 
     finalize(Infinity);
+    exitFound();
     post(true, complete);
 }
 

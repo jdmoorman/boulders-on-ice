@@ -3,13 +3,14 @@ import { cellKey, EditorLevel, EditorSnapshot, EditorTool } from '../editor/Edit
 import { parseLevelDraft, GridPoint, LevelParseError, splitLevels } from '../levels/LevelParser';
 import { isSouthFacingWall, TILE_SIZE, TileIndex } from '../levels/Tiles';
 import { AUTOTILE_SETS, AutotileSet, displayTileIndex, isTallSet } from '../levels/autotile';
-import { addBoulder, addDoor, addGoal, addPlate, addPlayer, addTallTile, addTrap, tileCenter } from '../levels/LevelLoader';
+import { addBoulder, addDoor, addGoal, addPlate, addPlayer, addTallTile, addTrap } from '../levels/LevelLoader';
 import { playerAnimKey } from '../playerAnimations';
 import type { GameData } from './Game';
 import { AnalysisProgress, EditorAnalysis } from '../editor/EditorAnalysis';
 import type { FoundTile } from '../editor/analysisShared';
 import { EditorSettings, loadEditorSettings, saveEditorSettings } from '../editor/EditorSettings';
 import { TEXT_STYLE } from '../ui/Button';
+import { drawRoute } from '../levels/routeDrawing';
 
 //  Everything the editor keeps between visits (e.g. while playtesting), stored in the registry
 interface EditorState
@@ -64,8 +65,6 @@ export const EDITOR_EVENTS = {
     SETTINGS: 'editor-settings'
 } as const;
 
-const PATH_COLOR = 0x1f5fa8;
-const BOULDER_PATH_COLOR = 0xb85a10;
 
 //  Level editor: the canvas, mouse painting, panning and zooming. The palette and buttons are
 //  in the EditorHud scene, launched on top so they aren't affected by the camera.
@@ -673,25 +672,7 @@ export class Editor extends Scene
             }
         }
 
-        const start = this.state.level.player;
-        if (start)
-        {
-            const { x, y } = tileCenter(start);
-            g.fillStyle(0xffffff, 0.9).fillCircle(x, y, 10);
-        }
-
-        for (const segment of segments)
-        {
-            const color = segment.kind === 'player' ? PATH_COLOR : BOULDER_PATH_COLOR;
-            const points = segment.cells.map(tileCenter);
-            g.lineStyle(6, color, 0.9).beginPath();
-            g.moveTo(points[0].x, points[0].y);
-            points.slice(1).forEach(p => g.lineTo(p.x, p.y));
-            g.strokePath();
-
-            const end = points[points.length - 1];
-            g.fillStyle(color, 1).fillCircle(end.x, end.y, 8);
-        }
+        drawRoute(g, this.state.level.player, segments);
     }
 
     private cellAt (pointer: Input.Pointer): GridPoint

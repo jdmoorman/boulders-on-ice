@@ -17,6 +17,12 @@ export interface AnalysisRequest
     level: LevelData;
     //  Whether steps from snow to snow are free (see EditorSettings)
     freeSnowWalking: boolean;
+    //  Look for a solution instead of every reachable tile: stop at the cheapest way to the exit,
+    //  or, in a level without one, to every plate under a boulder and every trap armed (see
+    //  AnalysisMessage.solution)
+    solve?: boolean;
+    //  Indices into level.traps of traps already armed at the start
+    armedTraps?: number[];
 }
 
 //  A tile the search reached, with the cheapest move sequence that gets the player there
@@ -45,4 +51,6 @@ export interface AnalysisMessage
     done: boolean;
     //  When done: false if the search stopped at MAX_STATES, so some tiles may be missing
     complete: boolean;
+    //  When done, in a solve search: the moves of the cheapest solution, or null if none was found
+    solution?: string | null;
 }

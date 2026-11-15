@@ -8,6 +8,10 @@ import { clearLevelInProgress, fitsLevel, loadLevelInProgress, saveLevelInProgre
 import { doorsOpen, resolveMove, Direction } from '../movement/Movement';
 import { MOVEMENT, PLATES } from '../settings';
 import { gameSettings } from '../gameSettings';
+import { TEXT_STYLE } from '../ui/Button';
+import { replayMoves } from '../movement/replay';
+import { drawRoute } from '../levels/routeDrawing';
+import type { AnalysisMessage, AnalysisRequest } from '../editor/analysisShared';
 import { playerAnimKey, PlayerAnimKind } from '../playerAnimations';
 import { LevelCompleteData } from './LevelComplete';
 import { updatePlates } from '../plates';
@@ -15,6 +19,8 @@ import { setDoorOpen } from '../doors';
 import { PauseMenuData } from './PauseMenu';
 
 const DIRECTIONS: readonly Direction[] = ['up', 'down', 'left', 'right'];
+//  Dev mode's solution route: over everything in the level
+const ROUTE_DEPTH = 1e7;
 
 export interface GameData
 {
@@ -60,6 +66,11 @@ export class Game extends Scene
     //  Direction whose blocked move was already reported, so a held key reports it once
     private reportedDir: Direction | null = null;
     private resume = false;
+    //  Dev mode: the solution route drawn over the level, the search finding it, and a note when
+    //  there's no solution from here
+    private routeGraphics: GameObjects.Graphics;
+    private solver: Worker | null = null;
+    private devNote: GameObjects.Text;
 
     constructor ()
     {
@@ -104,6 +115,14 @@ export class Game extends Scene
         this.playPlayerAnim('idle');
         this.saveProgress();
 
+        this.routeGraphics = this.add.graphics().setDepth(ROUTE_DEPTH);
+        this.devNote = this.add.text(16, 16, '', { ...TEXT_STYLE, fontSize: 20, strokeThickness: 5 })
+            .setScrollFactor(0)
+            .setDepth(ROUTE_DEPTH);
+        this.solver = null;
+        this.events.once(Scenes.Events.SHUTDOWN, () => this.stopSolver());
+        this.showSolution();
+
         const keyboard = this.input.keyboard;
         if (keyboard)
         {
@@ -143,7 +162,12 @@ export class Game extends Scene
             //  Keys released while paused can still read as held; clear them so the player
             //  doesn't walk on their own after resuming.
             //  Scene events outlive restarts, so remove the listener on shutdown.
-            const onResume = () => keyboard.resetKeys();
+            //  Dev mode may have been switched in the pause menu's Settings, so redraw the route too.
+            const onResume = () =>
+            {
+                keyboard.resetKeys();
+                this.showSolution();
+            };
             this.events.on(Scenes.Events.RESUME, onResume);
             this.events.once(Scenes.Events.SHUTDOWN, () => this.events.off(Scenes.Events.RESUME, onResume));
         }
@@ -358,6 +382,8 @@ export class Game extends Scene
         const duration = MOVEMENT.walkMsPerTile + (path.length - 1) * MOVEMENT.slideMsPerTile;
 
         this.updatePlates(from);
+        //  The route is for the position being left; a new one is found once this move ends
+        this.stopSolver();
         //  The scene clock pauses with the scene, like the tween
         this.time.delayedCall(Math.max(0, duration - PLATES.pressLeadMs), () => this.updatePlates(from, end));
 
@@ -382,8 +408,65 @@ export class Game extends Scene
                     return;
                 }
                 this.saveProgress();
+                this.showSolution();
             }
         });
+    }
+
+    //  Dev mode: finds the cheapest solution from the current position in the background (with
+    //  the editor's analysis search) and draws its route over the level, or notes that there's
+    //  none. Clears the route when dev mode is off.
+    private showSolution ()
+    {
+        this.stopSolver();
+        if (!gameSettings().devMode || this.levelComplete || this.springing)
+        {
+            return;
+        }
+        const level = {
+            ...this.level.data,
+            player: { ...this.playerPos },
+            boulders: this.level.data.boulders.map(b => ({ ...b }))
+        };
+        const armedTraps = this.level.traps.flatMap((t, i) => t.armed ? [i] : []);
+        this.devNote.setText('Dev: finding a solution…');
+
+        const worker = new Worker(new URL('../editor/analysis.worker.ts', import.meta.url), { type: 'module' });
+        worker.addEventListener('message', (event: MessageEvent<AnalysisMessage>) =>
+        {
+            const m = event.data;
+            if (this.solver !== worker || !m.done)
+            {
+                return;
+            }
+            this.stopSolver();
+            if (m.solution)
+            {
+                drawRoute(this.routeGraphics, level.player, replayMoves(level, m.solution, armedTraps));
+            }
+            else
+            {
+                this.devNote.setText(m.complete ? 'Dev: no solution from here' : 'Dev: gave up looking for a solution');
+            }
+        });
+        worker.addEventListener('error', event =>
+        {
+            console.error('Solution search failed:', event.message);
+            this.stopSolver();
+        });
+        //  Every step counts, so the route is the fewest key presses
+        const request: AnalysisRequest = { level, freeSnowWalking: false, solve: true, armedTraps };
+        worker.postMessage(request);
+        this.solver = worker;
+    }
+
+    //  Stops any solution search and clears the route
+    private stopSolver ()
+    {
+        this.solver?.terminate();
+        this.solver = null;
+        this.routeGraphics?.clear();
+        this.devNote?.setText('');
     }
 
     //  Whether a level without an exit has been solved: it has at least one pressure plate or
