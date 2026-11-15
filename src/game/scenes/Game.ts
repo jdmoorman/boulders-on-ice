@@ -11,7 +11,8 @@ import { doorsOpen, resolveMove, Direction } from '../movement/Movement';
 import { MOVEMENT, PLATES } from '../settings';
 import { gameSettings } from '../gameSettings';
 import { TEXT_STYLE } from '../ui/Button';
-import { HUD_MARGIN, HUD_RIGHT } from './GameHud';
+import { HUD_BUTTON_SIZE, HUD_MARGIN } from './GameHud';
+import { copyLevelToEditor, editorHasLevel } from './Editor';
 import { PathSegment, replayMoves } from '../movement/replay';
 import { drawRoute } from '../levels/routeDrawing';
 import type { AnalysisMessage, AnalysisRequest } from '../editor/analysisShared';
@@ -109,6 +110,24 @@ export class Game extends Scene
         }
     }
 
+    //  Dev mode: opens this level, as it starts, in the editor, after asking if that would replace
+    //  a level already there
+    copyToEditor ()
+    {
+        if (this.levelText)
+        {
+            return;
+        }
+        const level = LEVELS[this.levelIndex];
+        const fileName = `${level.pack.name}-${level.number}.txt`;
+        if (editorHasLevel(this) && !window.confirm(`Replace the level in the editor with ${fileName}? Anything not saved there will be lost.`))
+        {
+            return;
+        }
+        copyLevelToEditor(this, levelText(this, level), fileName);
+        leaveGame(this, 'Editor');
+    }
+
     //  Pauses the level and opens the Settings popup over it (see SettingsPopup), from the HUD
     openSettings ()
     {
@@ -168,8 +187,8 @@ export class Game extends Scene
         this.saveProgress();
 
         this.routeGraphics = this.add.graphics().setDepth(ROUTE_DEPTH).setVisible(false);
-        //  Right of the HUD's buttons
-        this.devNote = this.add.text(HUD_RIGHT + HUD_MARGIN, HUD_MARGIN, '', { ...TEXT_STYLE, fontSize: 20, strokeThickness: 5 })
+        //  Under the HUD's buttons
+        this.devNote = this.add.text(HUD_MARGIN, HUD_MARGIN * 1.5 + HUD_BUTTON_SIZE, '', { ...TEXT_STYLE, fontSize: 20, strokeThickness: 5 })
             .setScrollFactor(0)
             .setDepth(ROUTE_DEPTH)
             .setVisible(false);

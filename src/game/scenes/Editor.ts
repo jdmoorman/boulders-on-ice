@@ -37,6 +37,21 @@ type SaveFilePicker = (options: {
 
 const STATE_KEY = 'editorState';
 const NOTICE_KEY = 'editorNotice';
+const COPY_KEY = 'editorCopy';
+
+//  Whether the editor has a level in it (anything painted), which a copied level would replace
+export function editorHasLevel (scene: Scene): boolean
+{
+    const state = scene.registry.get(STATE_KEY) as EditorState | undefined;
+    return !!state?.level.toText();
+}
+
+//  Has the editor open this level text next time it starts, in place of what it had, with a fresh
+//  undo history; `fileName` is suggested when saving. Used by dev mode in play.
+export function copyLevelToEditor (scene: Scene, text: string, fileName: string): void
+{
+    scene.registry.set(COPY_KEY, { text, fileName });
+}
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 2;
 const HISTORY_LIMIT = 1000;
@@ -145,6 +160,7 @@ export class Editor extends Scene
         const camera = this.cameras.main;
         camera.setBackgroundColor(0x141a22);
 
+        this.takeCopiedLevel();
         const saved = this.registry.get(STATE_KEY) as EditorState | undefined;
         this.state = saved ?? this.initialState(new EditorLevel(), 'wall');
         this.state.fileName ??= DEFAULT_FILE_NAME;
@@ -392,6 +408,32 @@ export class Editor extends Scene
     }
 
     //  A fresh state for a level: zoom 1, with the view centred on the canvas
+    //  Replaces the saved state with a level left by copyLevelToEditor, if there is one
+    private takeCopiedLevel ()
+    {
+        const copy = this.registry.get(COPY_KEY) as { text: string, fileName: string } | undefined;
+        if (!copy)
+        {
+            return;
+        }
+        this.registry.remove(COPY_KEY);
+        const tool = (this.registry.get(STATE_KEY) as EditorState | undefined)?.tool ?? 'wall';
+        try
+        {
+            const level = EditorLevel.fromLevelData(parseLevelDraft(copy.text));
+            this.registry.set(STATE_KEY, { ...this.initialState(level, tool), fileName: copy.fileName });
+            this.registry.set(NOTICE_KEY, `Copied ${copy.fileName} into the editor.`);
+        }
+        catch (error)
+        {
+            if (!(error instanceof LevelParseError))
+            {
+                throw error;
+            }
+            this.registry.set(NOTICE_KEY, `Couldn't copy the level: ${error.message}.`);
+        }
+    }
+
     private initialState (level: EditorLevel, tool: EditorTool): EditorState
     {
         const camera = this.cameras.main;
