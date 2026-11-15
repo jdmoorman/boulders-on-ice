@@ -34,7 +34,7 @@ export class MainMenu extends Scene
     }
 
     //  A small checkbox in the bottom-left corner that turns dev mode on and off (see
-    //  gameSettings.ts): every level unlocked, N finishes a level, and the solution route shown
+    //  gameSettings.ts): every level unlocked, N finishes a level, and holding H shows the solution route
     private addDevModeToggle ()
     {
         const x = CORNER_MARGIN;

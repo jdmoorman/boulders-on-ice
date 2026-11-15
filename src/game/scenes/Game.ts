@@ -75,11 +75,14 @@ export class Game extends Scene
     private reportedDir: Direction | null = null;
     private resume = false;
     private from: GameOrigin = 'MainMenu';
-    //  Dev mode: the solution route drawn over the level, the search finding it, and a note when
-    //  there's no solution from here
+    //  Dev mode, while H is held: the solution route drawn over the level, the search finding it,
+    //  a note when there's no solution from here, and whether the route (or note) is ready for
+    //  the current position
     private routeGraphics: GameObjects.Graphics;
     private solver: Worker | null = null;
     private devNote: GameObjects.Text;
+    private hintReady = false;
+    private hintKey: Input.Keyboard.Key | null = null;
 
     constructor ()
     {
@@ -163,12 +166,15 @@ export class Game extends Scene
         this.playPlayerAnim('idle');
         this.saveProgress();
 
-        this.routeGraphics = this.add.graphics().setDepth(ROUTE_DEPTH);
+        this.routeGraphics = this.add.graphics().setDepth(ROUTE_DEPTH).setVisible(false);
         //  Right of the HUD's buttons
         this.devNote = this.add.text(HUD_RIGHT + HUD_MARGIN, HUD_MARGIN, '', { ...TEXT_STYLE, fontSize: 20, strokeThickness: 5 })
             .setScrollFactor(0)
-            .setDepth(ROUTE_DEPTH);
+            .setDepth(ROUTE_DEPTH)
+            .setVisible(false);
         this.solver = null;
+        this.hintReady = false;
+        this.hintKey = null;
         this.events.once(Scenes.Events.SHUTDOWN, () =>
         {
             //  Only the search: the route and note are already destroyed with the scene, and
@@ -178,7 +184,6 @@ export class Game extends Scene
             this.scene.stop('GameHud');
         });
         this.scene.launch('GameHud');
-        this.showSolution();
 
         const keyboard = this.input.keyboard;
         if (keyboard)
@@ -212,17 +217,21 @@ export class Game extends Scene
                     this.completeLevel();
                 }
             });
+            //  Dev mode: holding H shows the solution route from where the player is
+            this.hintKey = keyboard.addKey(Input.Keyboard.KeyCodes.H);
+            keyboard.on('keydown-H', () => this.showHint());
+            keyboard.on('keyup-H', () => this.hideHint());
             //  Esc goes back to the screen the level was started from
             keyboard.on('keydown-ESC', () => this.goBack());
 
             //  Keys released while paused can still read as held; clear them so the player
             //  doesn't walk on their own after resuming.
             //  Scene events outlive restarts, so remove the listener on shutdown.
-            //  Redraw the route too, in case a setting changed while paused.
+            //  That includes H, so the route is hidden again.
             const onResume = () =>
             {
                 keyboard.resetKeys();
-                this.showSolution();
+                this.hideHint();
             };
             this.events.on(Scenes.Events.RESUME, onResume);
             this.events.once(Scenes.Events.SHUTDOWN, () => this.events.off(Scenes.Events.RESUME, onResume));
@@ -464,18 +473,44 @@ export class Game extends Scene
                     return;
                 }
                 this.saveProgress();
-                this.showSolution();
+                //  Still holding H: show the route from the new position
+                if (this.hintKey?.isDown)
+                {
+                    this.showHint();
+                }
             }
         });
     }
 
-    //  Dev mode: finds the cheapest solution from the current position in the background (with
-    //  the editor's analysis search) and draws its route over the level, or notes that there's
-    //  none. Clears the route when dev mode is off.
-    private showSolution ()
+    //  Dev mode, H pressed: shows the solution route, finding it first if it isn't ready for the
+    //  current position
+    private showHint ()
+    {
+        if (!gameSettings().devMode)
+        {
+            return;
+        }
+        this.routeGraphics.setVisible(true);
+        this.devNote.setVisible(true);
+        if (!this.hintReady && !this.solver)
+        {
+            this.findSolution();
+        }
+    }
+
+    //  H released: hides the route (it's kept, ready for the next press, until the player moves)
+    private hideHint ()
+    {
+        this.routeGraphics.setVisible(false);
+        this.devNote.setVisible(false);
+    }
+
+    //  Finds the cheapest solution from the current position in the background (with the
+    //  editor's analysis search) and draws its route over the level, or notes that there's none
+    private findSolution ()
     {
         this.stopSolver();
-        if (!gameSettings().devMode || this.levelComplete || this.springing)
+        if (this.levelComplete || this.springing)
         {
             return;
         }
@@ -496,6 +531,7 @@ export class Game extends Scene
                 return;
             }
             this.stopSolver();
+            this.hintReady = true;
             if (m.solution)
             {
                 drawRoute(this.routeGraphics, level.player, replayMoves(level, m.solution, armedTraps));
@@ -521,6 +557,7 @@ export class Game extends Scene
     {
         this.solver?.terminate();
         this.solver = null;
+        this.hintReady = false;
         this.routeGraphics?.clear();
         this.devNote?.setText('');
     }
