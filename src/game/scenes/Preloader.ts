@@ -40,11 +40,11 @@ export class Preloader extends Scene
             frameWidth: PLAYER_FRAME_WIDTH,
             frameHeight: PLAYER_FRAME_HEIGHT
         });
-        this.load.image('boulder', 'rock.png');
-        this.load.image('goal', 'ranitayas_wall_hole.png');
-        this.load.image('wallAutotile', 'ranitayas_autotile_wall.png');
-        this.load.image('floor', 'ranitayas_floor.png');
-        this.load.image('ice', 'buch_ice_muted.png');
+        this.load.image('boulder', 'boulders/rock.png');
+        this.load.image('goal', 'exit/ranitayas_wall_hole.png');
+        this.load.image('wallAutotile', 'walls/ranitayas_autotile_wall.png');
+        this.load.image('floor', 'floor/ranitayas_floor.png');
+        this.load.image('ice', 'ice/buch_ice_muted.png');
         loadPlates(this);
         loadDoors(this);
         loadTraps(this);

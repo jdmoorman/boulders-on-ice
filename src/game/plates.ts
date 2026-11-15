@@ -4,7 +4,7 @@ import { GridPoint } from './levels/LevelParser';
 //  Pressure plates. For now they do nothing but show whether they're pressed: pressed while the
 //  player or a boulder rests on one (sliding across doesn't count).
 //
-//  Art: ranitayas_plate_press.png and ranitayas_plate_unpress.png, strips of 14x13 frames.
+//  Art: plates/ranitayas_plate_press.png and plates/ranitayas_plate_unpress.png, strips of 14x13 frames.
 //  'plate-press' goes from raised to pressed and 'plate-unpress' back again; each animation plays
 //  every frame of its sheet, so the sheets can have any number of frames.
 
@@ -24,8 +24,8 @@ export const PLATE_DROP = 0;
 export function loadPlates (scene: Scene): void
 {
     const frame = { frameWidth: PLATE_FRAME_WIDTH, frameHeight: PLATE_FRAME_HEIGHT };
-    scene.load.spritesheet('plate-press', 'ranitayas_plate_press.png', frame);
-    scene.load.spritesheet('plate-unpress', 'ranitayas_plate_unpress.png', frame);
+    scene.load.spritesheet('plate-press', 'plates/ranitayas_plate_press.png', frame);
+    scene.load.spritesheet('plate-unpress', 'plates/ranitayas_plate_unpress.png', frame);
 }
 
 //  Registers the press and unpress animations. Animations are global, so call this once (in the
