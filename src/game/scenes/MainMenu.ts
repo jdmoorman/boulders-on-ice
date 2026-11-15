@@ -1,4 +1,4 @@
-import { Scene } from 'phaser';
+import { GameObjects, Scene } from 'phaser';
 import { addButton, TEXT_STYLE } from '../ui/Button';
 import { changeGameSettings, gameSettings } from '../gameSettings';
 
@@ -13,6 +13,8 @@ import type { GameData } from './Game';
 
 export class MainMenu extends Scene
 {
+    private comingSoonText: GameObjects.Text | null = null;
+
     constructor ()
     {
         super('MainMenu');
@@ -20,17 +22,32 @@ export class MainMenu extends Scene
 
     create ()
     {
+        this.comingSoonText = null;
         //  Same title style and position as Level Select
         this.add.text(512, 90, 'Main Menu', { ...TEXT_STYLE, fontSize: 48, strokeThickness: 8 }).setOrigin(0.5);
 
+        //  Wide enough for "Achievements"
+        const size = { width: 260 };
         //  Play picks the level in progress back up where it was left, or else starts the
         //  earliest level not yet completed. Pass the data in full: Phaser reuses a scene's
         //  previous start data otherwise
-        addButton(this, 512, 220, 'Play', () => this.scene.start('Game', playData()));
-        addButton(this, 512, 304, 'Levels', () => this.scene.start('LevelSelect'));
-        addButton(this, 512, 388, 'Editor', () => this.scene.start('Editor'));
+        addButton(this, 512, 220, 'Play', () => this.scene.start('Game', playData()), size);
+        addButton(this, 512, 304, 'Levels', () => this.scene.start('LevelSelect'), size);
+        addButton(this, 512, 388, 'Editor', () => this.scene.start('Editor'), size);
+        //  Placeholder: it only says it isn't done yet
+        addButton(this, 512, 472, 'Achievements', () => this.comingSoon('Achievements'), size);
 
         this.addDevModeToggle();
+    }
+
+    //  For the placeholder button: a note near the bottom of the screen that fades away
+    private comingSoon (name: string)
+    {
+        this.comingSoonText?.destroy();
+        const text = this.add.text(512, 710, `${name} isn't done yet.`, { ...TEXT_STYLE, fontSize: 22, strokeThickness: 5 })
+            .setOrigin(0.5);
+        this.comingSoonText = text;
+        this.tweens.add({ targets: text, alpha: 0, delay: 1200, duration: 400, onComplete: () => text.destroy() });
     }
 
     //  A small checkbox in the bottom-left corner that turns dev mode on and off (see
