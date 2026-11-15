@@ -5,7 +5,7 @@ import { GridPoint } from './levels/LevelParser';
 //  lights up. The second time it springs: the floor slides away into a pit. A player who falls in
 //  starts the level over; a boulder that falls in is gone, and the trap closes again, unarmed.
 //
-//  Art: traps/ranitayas_rune_trap.png, a strip of 32x32 frames: arming is the first half of the
+//  Art: traps/ranitaya_rune_trap.png, a strip of 32x32 frames: arming is the first half of the
 //  strip (ending on the lit rune) and springing is the rest. Closing plays the whole strip
 //  backwards: the pit closes, then the slab rises and its rune goes dark.
 
@@ -15,7 +15,7 @@ const TRAP_FPS = 12;
 //  Loads the trap sheet. Call from the Preloader's preload().
 export function loadTraps (scene: Scene): void
 {
-    scene.load.spritesheet('trap', 'traps/ranitayas_rune_trap.png', { frameWidth: TRAP_FRAME_SIZE, frameHeight: TRAP_FRAME_SIZE });
+    scene.load.spritesheet('trap', 'traps/ranitaya_rune_trap.png', { frameWidth: TRAP_FRAME_SIZE, frameHeight: TRAP_FRAME_SIZE });
 }
 
 //  The last frame of the arming half: an armed trap at rest

@@ -2,7 +2,7 @@
 
 ### Art
 
-- ranitayas_*.png from the [RANITAYAS Massive Dungeon Pack](https://ranitaya-studios.itch.io/ranitayas-massive-dungeon-pack) by [Ranitaya Studio](https://x.com/RanitayaStudio). Licensed under [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- ranitaya_*.png from the [RANITAYAS Massive Dungeon Pack](https://ranitaya-studios.itch.io/ranitayas-massive-dungeon-pack) by [Ranitaya Studio](https://x.com/RanitayaStudio). Licensed under [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - buch_*.png were derived from a tileset made by [Buch](https://opengameart.org/users/buch) for the game [Tuxemon](https://github.com/Tuxemon/Tuxemon). Commissioned by luke83, some changes and additions by luke83 and Past the Future. Licensed under [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/).
 - [rock.png](../public/assets/boulders/rock.png) made by [Jacob Moorman](https://github.com/jdmoorman) for this game. Licensed under [CC0](https://creativecommons.org/public-domain/#cc0).
 - [firefox.png](../public/assets/player/firefox.png) made by Guillaume Lecollinet for the game [BrowserQuest](https://github.com/browserquest/BrowserQuest). Licensed under [CC-BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).

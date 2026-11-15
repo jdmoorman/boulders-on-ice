@@ -41,16 +41,16 @@ export class Preloader extends Scene
             frameHeight: PLAYER_FRAME_HEIGHT
         });
         this.load.image('boulder', 'boulders/rock.png');
-        this.load.image('goal', 'exit/ranitayas_wall_hole.png');
-        this.load.image('wallAutotile', 'walls/ranitayas_autotile_wall.png');
-        this.load.image('floor', 'floor/ranitayas_floor.png');
+        this.load.image('goal', 'exit/ranitaya_wall_hole.png');
+        this.load.image('wallAutotile', 'walls/ranitaya_autotile_wall.png');
+        this.load.image('floor', 'floor/ranitaya_floor.png');
         this.load.image('ice', 'ice/buch_ice_muted.png');
         //  Button icons (undo and redo are drawn in textures.ts)
         this.load.image('icon-pencil', 'icons/nikoichu_pencil.png');
-        this.load.image('icon-home', 'icons/ranitayas_home.png');
-        this.load.image('icon-gear', 'icons/ranitayas_settings.png');
-        this.load.image('icon-restart', 'icons/ranitayas_reset.png');
-        this.load.image('icon-lock', 'icons/ranitayas_lock.png');
+        this.load.image('icon-home', 'icons/ranitaya_home.png');
+        this.load.image('icon-gear', 'icons/ranitaya_settings.png');
+        this.load.image('icon-restart', 'icons/ranitaya_reset.png');
+        this.load.image('icon-lock', 'icons/ranitaya_lock.png');
         loadPlates(this);
         loadDoors(this);
         loadTraps(this);

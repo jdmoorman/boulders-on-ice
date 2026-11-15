@@ -4,7 +4,7 @@ import { GridPoint } from './levels/LevelParser';
 //  Metal doors (portcullises), open while every pressure plate is pressed (see doorsOpen in
 //  Movement.ts).
 //
-//  Art: gate/ranitayas_gate_open.png and gate/ranitayas_gate_close.png, strips of 16x20 frames (one tile
+//  Art: gate/ranitaya_gate_open.png and gate/ranitaya_gate_close.png, strips of 16x20 frames (one tile
 //  wide): bars standing on a base just below the middle of the tile and rising over the tile
 //  above. 'door-open' goes from closed to open and 'door-close' back again; each animation plays
 //  every frame of its sheet.
@@ -25,8 +25,8 @@ export const DOOR_OPEN: Readonly<{ key: string, frame: number }> = { key: 'door-
 export function loadDoors (scene: Scene): void
 {
     const frame = { frameWidth: DOOR_FRAME_WIDTH, frameHeight: DOOR_FRAME_HEIGHT };
-    scene.load.spritesheet('door-open', 'gate/ranitayas_gate_open.png', frame);
-    scene.load.spritesheet('door-close', 'gate/ranitayas_gate_close.png', frame);
+    scene.load.spritesheet('door-open', 'gate/ranitaya_gate_open.png', frame);
+    scene.load.spritesheet('door-close', 'gate/ranitaya_gate_close.png', frame);
 }
 
 //  Registers the open and close animations. Animations are global, so call this once (in the
