@@ -1,6 +1,6 @@
 import { Scene } from 'phaser';
 import { addButton, TEXT_STYLE } from '../ui/Button';
-import { GameData, leaveGame, withModifier } from './Game';
+import { GameData, GameOrigin, leaveGame, withModifier } from './Game';
 
 export interface LevelCompleteData
 {
@@ -8,6 +8,8 @@ export interface LevelCompleteData
     isLast: boolean;
     //  Set when playtesting from the editor (see GameData)
     levelText?: string;
+    //  The screen the level was started from, kept for the next level or a replay (see GameData)
+    from?: GameOrigin;
 }
 
 //  Overlay shown on top of the Game scene when a level is finished.
@@ -17,6 +19,7 @@ export class LevelComplete extends Scene
     private levelIndex = 0;
     private isLast = false;
     private levelText: string | undefined;
+    private from: GameOrigin | undefined;
 
     constructor ()
     {
@@ -28,6 +31,7 @@ export class LevelComplete extends Scene
         this.levelIndex = data.levelIndex;
         this.isLast = data.isLast;
         this.levelText = data.levelText;
+        this.from = data.from;
     }
 
     create ()
@@ -79,13 +83,16 @@ export class LevelComplete extends Scene
     //  scene.start from this scene stops the overlay and (re)starts Game with the given level
     private replay ()
     {
-        const data: GameData = this.levelText ? { levelText: this.levelText } : { levelIndex: this.levelIndex };
+        const data: GameData = this.levelText
+            ? { levelText: this.levelText, from: this.from }
+            : { levelIndex: this.levelIndex, from: this.from };
         this.scene.start('Game', data);
     }
 
     private next ()
     {
-        this.scene.start('Game', { levelIndex: this.levelIndex + 1 });
+        const data: GameData = { levelIndex: this.levelIndex + 1, from: this.from };
+        this.scene.start('Game', data);
     }
 
     private toEditor ()

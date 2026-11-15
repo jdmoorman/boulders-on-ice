@@ -5,6 +5,7 @@ import { levelThumbnail } from '../levels/thumbnail';
 import { isCompleted, isUnlocked } from '../progress';
 import { checkPack, importPack, removePack } from '../levels/importedPacks';
 import { LevelParseError } from '../levels/LevelParser';
+import type { GameData } from './Game';
 
 //  Pack list
 const PACK_W = 640;
@@ -185,7 +186,8 @@ export class LevelSelect extends Scene
             const levelIndex = LEVELS.findIndex(l => l.key === level.key);
 
             const button = addIconButton(this, x, y, [{ key: thumbnails[i], scale: 1 }],
-                () => this.scene.start('Game', { levelIndex }), { width: CELL_W, height: CELL_H });
+                () => this.scene.start('Game', { levelIndex, from: 'LevelSelect' } satisfies GameData),
+                { width: CELL_W, height: CELL_H });
             //  Level number in the corner, over the thumbnail
             this.add.text(x - CELL_W / 2 + 6, y - CELL_H / 2 + 2, String(first + i + 1),
                 { ...TEXT_STYLE, fontSize: 18, strokeThickness: 4 });

@@ -2,7 +2,8 @@ import { Scene, Scenes, Input, GameObjects, Animations } from 'phaser';
 import { parseLevel, GridPoint } from '../levels/LevelParser';
 import { buildLevel, BuiltLevel, tileCenter, ySortDepth } from '../levels/LevelLoader';
 import type { Trap } from '../traps';
-import { LEVELS, isLastInPack, levelText } from '../levels/levelList';
+import { LEVEL_PACKS, LEVELS, isLastInPack, levelText } from '../levels/levelList';
+import { LEVELS_PER_PAGE, LevelSelectData } from './LevelSelect';
 import { markCompleted } from '../progress';
 import { clearLevelInProgress, fitsLevel, loadLevelInProgress, saveLevelInProgress } from '../levelInProgress';
 import { doorsOpen, resolveMove, Direction } from '../movement/Movement';
@@ -29,7 +30,13 @@ export interface GameData
     levelText?: string;
     //  Pick the level up where it was left (see levelInProgress.ts), if it was saved
     resume?: boolean;
+    //  The screen the level was started from, which Esc goes back to: the editor by default when
+    //  playtesting, else the main menu
+    from?: GameOrigin;
 }
+
+//  Screens a level can be started from
+export type GameOrigin = 'MainMenu' | 'LevelSelect' | 'Editor';
 
 //  Whether Ctrl, Cmd, Alt or Shift was held for a key press. R with one of those is most likely
 //  the browser's refresh shortcut rather than a restart.
@@ -38,11 +45,12 @@ export function withModifier (event: KeyboardEvent): boolean
     return event.ctrlKey || event.metaKey || event.altKey || event.shiftKey;
 }
 
-//  Stops Game and starts another scene, for overlays (the HUD, level complete) leaving play
-export function leaveGame (scene: Scene, target: 'Editor' | 'MainMenu'): void
+//  Stops Game and starts another scene (with `data`, if given), for overlays (the HUD, level
+//  complete) leaving play
+export function leaveGame (scene: Scene, target: GameOrigin, data?: object): void
 {
     scene.scene.stop('Game');
-    scene.scene.start(target);
+    scene.scene.start(target, data);
 }
 
 export class Game extends Scene
@@ -66,6 +74,7 @@ export class Game extends Scene
     //  Direction whose blocked move was already reported, so a held key reports it once
     private reportedDir: Direction | null = null;
     private resume = false;
+    private from: GameOrigin = 'MainMenu';
     //  Dev mode: the solution route drawn over the level, the search finding it, and a note when
     //  there's no solution from here
     private routeGraphics: GameObjects.Graphics;
@@ -82,6 +91,7 @@ export class Game extends Scene
         this.levelIndex = data.levelIndex ?? 0;
         this.levelText = data.levelText ?? null;
         this.resume = data.resume ?? false;
+        this.from = data.from ?? (this.levelText ? 'Editor' : 'MainMenu');
     }
 
     //  Data that starts this same level again
@@ -104,7 +114,28 @@ export class Game extends Scene
 
     private restartData (): GameData
     {
-        return this.levelText ? { levelText: this.levelText } : { levelIndex: this.levelIndex };
+        return this.levelText
+            ? { levelText: this.levelText, from: this.from }
+            : { levelIndex: this.levelIndex, from: this.from };
+    }
+
+    //  Leaves the level for the screen it was started from. Level Select opens on the page of
+    //  the level's pack that holds it.
+    private goBack ()
+    {
+        if (this.from === 'LevelSelect' && !this.levelText)
+        {
+            const level = LEVELS[this.levelIndex];
+            const data: LevelSelectData = {
+                pack: LEVEL_PACKS.indexOf(level.pack),
+                page: Math.floor((level.number - 1) / LEVELS_PER_PAGE)
+            };
+            leaveGame(this, 'LevelSelect', data);
+        }
+        else
+        {
+            leaveGame(this, this.from);
+        }
     }
 
     create ()
@@ -181,8 +212,8 @@ export class Game extends Scene
                     this.completeLevel();
                 }
             });
-            //  While playtesting, Esc goes straight back to the editor
-            keyboard.on('keydown-ESC', () => this.levelText && this.scene.start('Editor'));
+            //  Esc goes back to the screen the level was started from
+            keyboard.on('keydown-ESC', () => this.goBack());
 
             //  Keys released while paused can still read as held; clear them so the player
             //  doesn't walk on their own after resuming.
@@ -536,7 +567,8 @@ export class Game extends Scene
         const data: LevelCompleteData = {
             levelIndex: this.levelIndex,
             isLast: isLastInPack(this.levelIndex),
-            levelText: this.levelText ?? undefined
+            levelText: this.levelText ?? undefined,
+            from: this.from
         };
         this.scene.launch('LevelComplete', data);
     }

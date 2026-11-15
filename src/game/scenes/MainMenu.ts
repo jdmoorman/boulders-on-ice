@@ -67,6 +67,6 @@ function playData (): GameData
     const saved = loadLevelInProgress();
     const levelIndex = saved ? LEVELS.findIndex(level => level.key === saved.levelKey) : -1;
     return levelIndex >= 0
-        ? { levelIndex, resume: true }
-        : { levelIndex: firstUncompletedLevel(), resume: false };
+        ? { levelIndex, resume: true, from: 'MainMenu' }
+        : { levelIndex: firstUncompletedLevel(), resume: false, from: 'MainMenu' };
 }

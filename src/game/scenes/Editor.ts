@@ -254,7 +254,7 @@ export class Editor extends Scene
             this.message(problems[0] ?? 'Place a player to play.');
             return;
         }
-        const data: GameData = { levelText: text };
+        const data: GameData = { levelText: text, from: 'Editor' };
         this.scene.start('Game', data);
     }
 
