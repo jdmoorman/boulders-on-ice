@@ -188,8 +188,8 @@ function addLockTexture (scene: Scene): void
 
 //  A curved arrow (the classic undo symbol): an arc over the top, with the head on the left
 //  pointing down. `mirrored` flips it to point right, for redo. White with a black outline.
-//  'icon-restart': the classic restart symbol, a circular arrow going clockwise with a gap at the
-//  top, white with a black outline like the other icons
+//  'icon-restart': the classic restart symbol, a circular arrow going anticlockwise with a gap at
+//  the top, white with a black outline like the other icons
 function addRestartTexture (scene: Scene): void
 {
     const size = 48;
@@ -202,24 +202,25 @@ function addRestartTexture (scene: Scene): void
     const cx = 24;
     const cy = 26;
     const r = 14;
-    //  Canvas angles grow clockwise from +x; the arc runs clockwise from just right of the top
-    //  round to just left of it, where the arrowhead points on clockwise
-    const from = -0.3 * Math.PI;
-    const to = 1.45 * Math.PI;
+    //  Canvas angles grow clockwise from +x; the arc runs anticlockwise from the left round to
+    //  just left of the top, where the arrowhead points on anticlockwise, tipped a little below
+    //  horizontal
+    const from = Math.PI;
+    const to = -0.6 * Math.PI;
 
     const arc = () =>
     {
         c.beginPath();
-        c.arc(cx, cy, r, from, to);
+        c.arc(cx, cy, r, from, to, true);
         c.stroke();
     };
     const head = () =>
     {
         const px = cx + r * Math.cos(to);
         const py = cy + r * Math.sin(to);
-        //  Clockwise along the circle, and outward from its centre
-        const tx = -Math.sin(to);
-        const ty = Math.cos(to);
+        //  Anticlockwise along the circle, and outward from its centre
+        const tx = Math.sin(to);
+        const ty = -Math.cos(to);
         const nx = Math.cos(to);
         const ny = Math.sin(to);
         c.beginPath();
