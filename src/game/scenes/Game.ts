@@ -120,7 +120,13 @@ export class Game extends Scene
             .setScrollFactor(0)
             .setDepth(ROUTE_DEPTH);
         this.solver = null;
-        this.events.once(Scenes.Events.SHUTDOWN, () => this.stopSolver());
+        this.events.once(Scenes.Events.SHUTDOWN, () =>
+        {
+            //  Only the search: the route and note are already destroyed with the scene, and
+            //  changing a destroyed Text throws
+            this.solver?.terminate();
+            this.solver = null;
+        });
         this.showSolution();
 
         const keyboard = this.input.keyboard;
