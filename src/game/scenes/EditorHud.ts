@@ -37,11 +37,15 @@ const PALETTE_ICONS: Readonly<Record<EditorTool, readonly ButtonIcon[]>> = {
     wall: [WALL_ICON],
     snow: [SNOW_ICON],
     ice: [{ key: 'tiles', frame: TileIndex.Ice }],
-    exit: [WALL_ICON, { key: 'goal' }],
+    //  The wall fills the button's height at 2x; the hole, at 2x too, stands on its bottom edge
+    //  as it does in play
+    exit: [WALL_ICON, { key: 'goal', scale: 2, offsetY: 6 }],
     player: [{ key: 'player', frame: 'palette' }],
     boulder: [{ key: 'boulder' }],
-    plate: [SNOW_ICON, { key: 'plate-press', frame: PLATE_UP_FRAME }],
-    door: [SNOW_ICON, DOOR_CLOSED],
+    //  At a whole-number scale, so its pixels stay even
+    plate: [{ key: 'plate-press', frame: PLATE_UP_FRAME, scale: 3 }],
+    //  At 2x, so the gate fits within the snow tile
+    door: [SNOW_ICON, { ...DOOR_CLOSED, scale: 2 }],
     trap: [{ key: 'trap', frame: 0 }],
     erase: [],
     'erase-entity': []

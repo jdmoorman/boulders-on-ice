@@ -69,6 +69,8 @@ export interface ButtonIcon
     frame?: string | number;
     //  Draw at this scale instead of scaling to fit the button
     scale?: number;
+    //  Move the picture down by this many pixels from the button's centre (up if negative)
+    offsetY?: number;
 }
 
 export const ICON_INSET = 8;
@@ -101,9 +103,9 @@ export function addIconButton (
         button.setStrokeStyle(3, 0x000000);
     }
 
-    const images = icons.map(({ key, frame, scale }) =>
+    const images = icons.map(({ key, frame, scale, offsetY = 0 }) =>
     {
-        const image = scene.add.image(x, y, key, frame);
+        const image = scene.add.image(x, y + offsetY, key, frame);
         const insetX = panel ? width * PANEL_BORDER : ICON_INSET;
         const insetY = panel ? height * PANEL_BORDER : ICON_INSET;
         const fit = Math.min((width - insetX * 2) / image.width, (height - insetY * 2) / image.height);
