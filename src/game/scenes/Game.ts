@@ -17,7 +17,6 @@ import { playerAnimKey, PlayerAnimKind } from '../playerAnimations';
 import { LevelCompleteData } from './LevelComplete';
 import { updatePlates } from '../plates';
 import { setDoorOpen } from '../doors';
-import { PauseMenuData } from './PauseMenu';
 
 const DIRECTIONS: readonly Direction[] = ['up', 'down', 'left', 'right'];
 //  Dev mode's solution route: over everything in the level
@@ -39,7 +38,7 @@ export function withModifier (event: KeyboardEvent): boolean
     return event.ctrlKey || event.metaKey || event.altKey || event.shiftKey;
 }
 
-//  Stops Game and starts another scene, for overlays (pause menu, level complete) leaving play
+//  Stops Game and starts another scene, for overlays (the HUD, level complete) leaving play
 export function leaveGame (scene: Scene, target: 'Editor' | 'MainMenu'): void
 {
     scene.scene.stop('Game');
@@ -183,8 +182,7 @@ export class Game extends Scene
                 }
             });
             //  While playtesting, Esc goes straight back to the editor
-            keyboard.on('keydown-ESC', () => this.levelText ? this.scene.start('Editor') : this.pauseGame());
-            keyboard.on('keydown-P', () => this.pauseGame());
+            keyboard.on('keydown-ESC', () => this.levelText && this.scene.start('Editor'));
 
             //  Keys released while paused can still read as held; clear them so the player
             //  doesn't walk on their own after resuming.
@@ -525,19 +523,6 @@ export class Game extends Scene
             facing: this.facing,
             armedTraps: this.level.traps.flatMap((t, i) => t.armed ? [i] : [])
         });
-    }
-
-    //  Freezes the level (including any tween in progress) and opens the pause menu.
-    //  A paused scene receives no input, so this only runs while playing.
-    private pauseGame ()
-    {
-        if (this.levelComplete || this.springing)
-        {
-            return;
-        }
-        const data: PauseMenuData = { levelIndex: this.levelIndex, levelText: this.levelText ?? undefined };
-        this.scene.pause();
-        this.scene.launch('PauseMenu', data);
     }
 
     private completeLevel ()

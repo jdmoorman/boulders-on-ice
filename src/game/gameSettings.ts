@@ -1,4 +1,4 @@
-//  Gameplay settings, changed in the Settings popup on the pause menu and remembered in
+//  Gameplay settings, changed in the Settings popup (see SettingsPopup) and remembered in
 //  localStorage across visits and reloads. Storage can be unavailable (private windows, blocked
 //  site data), in which case the defaults are used and changes last until the page is closed.
 export interface GameSettings

@@ -22,7 +22,7 @@ export class GameHud extends Scene
     create ()
     {
         const game = this.scene.get('Game') as Game;
-        //  Not while the level is paused (the pause menu or Settings is over it)
+        //  Not while the level is paused (Settings is over it)
         const whenPlaying = (action: () => void) => () =>
         {
             if (!this.scene.isPaused('Game'))

@@ -7,7 +7,6 @@ import { SettingsPopup } from './scenes/SettingsPopup';
 import { LevelComplete } from './scenes/LevelComplete';
 import { LevelSelect } from './scenes/LevelSelect';
 import { MainMenu } from './scenes/MainMenu';
-import { PauseMenu } from './scenes/PauseMenu';
 import { AUTO, Game, GameObjects } from 'phaser';
 import { Preloader } from './scenes/Preloader';
 
@@ -51,7 +50,6 @@ const config: Phaser.Types.Core.GameConfig = {
         //  Over the level, under the popups
         GameHud,
         LevelComplete,
-        PauseMenu,
         SettingsPopup,
         Editor,
         EditorHud
