@@ -1,6 +1,6 @@
 import { Scene, Input, Time, GameObjects } from 'phaser';
 import { LEVEL_PACKS, LEVELS, LevelPack } from '../levels/levelList';
-import { addButton, addIconButton, buttonLabel, ICON_INSET, TEXT_STYLE } from '../ui/Button';
+import { addButton, addIconButton, buttonLabel, ICON_INSET, TEXT_STYLE, UI_LIGHT_CSS } from '../ui/Button';
 import { levelThumbnail } from '../levels/thumbnail';
 import { isCompleted, isUnlocked } from '../progress';
 import { checkPack, importPack, removePack } from '../levels/importedPacks';
@@ -103,7 +103,7 @@ export class LevelSelect extends Scene
             const done = pack.levels.filter(level => isCompleted(level.key)).length;
             const all = done === pack.levels.length;
             this.add.text(cx + PACK_W / 2 - 24, y, `${all ? '✓ ' : ''}${done} / ${pack.levels.length}`,
-                { ...TEXT_STYLE, fontSize: 24, color: all ? '#9fe08a' : '#ffffff' })
+                { ...TEXT_STYLE, fontSize: 24, color: all ? '#9fe08a' : UI_LIGHT_CSS })
                 .setOrigin(1, 0.5);
             if (pack.imported)
             {

@@ -1,6 +1,7 @@
 import { Scene, Textures } from 'phaser';
 import { createPlayerAnimations, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT } from '../playerAnimations';
 import { generateTextures } from '../textures';
+import { UI_LIGHT } from '../ui/Button';
 import { LEVELS } from '../levels/levelList';
 import { loadImportedPacks } from '../levels/importedPacks';
 import { createPlateAnimations, loadPlates } from '../plates';
@@ -17,10 +18,10 @@ export class Preloader extends Scene
     init ()
     {
         //  A simple progress bar. This is the outline of the bar.
-        this.add.rectangle(512, 384, 468, 32).setStrokeStyle(1, 0xffffff);
+        this.add.rectangle(512, 384, 468, 32).setStrokeStyle(1, UI_LIGHT);
 
         //  This is the progress bar itself. It will increase in size from the left based on the % of progress.
-        const bar = this.add.rectangle(512-230, 384, 4, 28, 0xffffff);
+        const bar = this.add.rectangle(512-230, 384, 4, 28, UI_LIGHT);
 
         //  Use the 'progress' event emitted by the LoaderPlugin to update the loading bar
         this.load.on('progress', (progress: number) => {

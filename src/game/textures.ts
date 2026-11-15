@@ -1,6 +1,7 @@
 import { Scene, Textures } from 'phaser';
 import { TILE_SIZE, TileIndex } from './levels/Tiles';
 import { PLAYER_FRAME_WIDTH } from './playerAnimations';
+import { UI_LIGHT_CSS } from './ui/Button';
 import {
     AUTOTILE_COLUMNS, AUTOTILE_FRAMES, AUTOTILE_SETS, ISOLATED_FRAME, autotileBase,
     autotileFrameSize, isTallSet
@@ -83,7 +84,7 @@ export function generateTextures (scene: Scene): void
 }
 
 //  A curved arrow (the classic undo symbol): an arc over the top, with the head on the left
-//  pointing down. `mirrored` flips it to point right, for redo. White with a black outline.
+//  pointing down. `mirrored` flips it to point right, for redo. Drawn in the UI colour with a black outline.
 function addArrowTexture (scene: Scene, key: string, mirrored: boolean): void
 {
     const size = 48;
@@ -117,7 +118,7 @@ function addArrowTexture (scene: Scene, key: string, mirrored: boolean): void
     c.lineCap = 'round';
     c.lineJoin = 'round';
 
-    //  Black outline first, then white on top
+    //  Black outline first, then the UI colour on top
     c.strokeStyle = '#000000';
     c.lineWidth = 11;
     shaft();
@@ -125,11 +126,11 @@ function addArrowTexture (scene: Scene, key: string, mirrored: boolean): void
     c.lineWidth = 5;
     c.stroke();
 
-    c.strokeStyle = '#ffffff';
+    c.strokeStyle = UI_LIGHT_CSS;
     c.lineWidth = 5;
     shaft();
     head();
-    c.fillStyle = '#ffffff';
+    c.fillStyle = UI_LIGHT_CSS;
     c.fill();
 
     texture.refresh();

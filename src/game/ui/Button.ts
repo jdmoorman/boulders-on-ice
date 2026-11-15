@@ -1,7 +1,11 @@
 import { Scene, GameObjects } from 'phaser';
 
+//  The light colour of the pixel-art icons, for text and drawings in the UI
+export const UI_LIGHT = 0xc7cfcc;
+export const UI_LIGHT_CSS = '#c7cfcc';
+
 export const TEXT_STYLE = {
-    fontFamily: 'Arial Black', color: '#ffffff',
+    fontFamily: 'Arial Black', color: UI_LIGHT_CSS,
     stroke: '#000000', strokeThickness: 6,
     align: 'center'
 };
