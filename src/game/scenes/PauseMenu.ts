@@ -9,13 +9,8 @@ const CHECKBOX_SIZE = 36;
 const CHECK_COLOR = 0xf2c230;
 
 //  The on/off settings in the Settings popup, in order
-const SETTINGS: readonly { key: keyof GameSettings, label: string, description: string }[] = [
-    {
-        key: 'devMode',
-        label: 'Dev mode',
-        description: 'Unlocks every level, shows the solution route,\nand N finishes the level.'
-    }
-];
+//  (Dev mode is switched on the main menu instead.)
+const SETTINGS: readonly { key: keyof GameSettings, label: string, description: string }[] = [];
 
 export interface PauseMenuData
 {
@@ -101,7 +96,7 @@ export class PauseMenu extends Scene
             return;
         }
         const { width, height } = this.scale;
-        const panelHeight = 160 + SETTINGS.length * SETTING_ROW_HEIGHT;
+        const panelHeight = 160 + Math.max(1, SETTINGS.length) * SETTING_ROW_HEIGHT;
         const left = (width - SETTINGS_WIDTH) / 2;
         const top = (height - panelHeight) / 2;
         const objects: GameObjects.GameObject[] = [];
@@ -118,6 +113,12 @@ export class PauseMenu extends Scene
         objects.push(this.add.text(width / 2, top + 40, 'Settings', { ...TEXT_STYLE, fontSize: 32 })
             .setOrigin(0.5));
 
+        if (SETTINGS.length === 0)
+        {
+            objects.push(this.add.text(width / 2, top + 90 + SETTING_ROW_HEIGHT / 2 - 18, 'No settings yet.',
+                { ...TEXT_STYLE, fontSize: 22, strokeThickness: 5 })
+                .setOrigin(0.5));
+        }
         SETTINGS.forEach(({ key, label, description }, i) =>
         {
             const y = top + 90 + i * SETTING_ROW_HEIGHT;
