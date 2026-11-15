@@ -31,14 +31,14 @@ export class GameHud extends Scene
             }
         };
 
-        //  Top left, in a row: restart (like R), Settings, and leave: to the main menu, or back to
-        //  the editor when playtesting
+        //  Top left, in a row: leave (to the main menu, or back to the editor when playtesting),
+        //  Settings, and restart (like R)
         const buttons: [string, () => void][] = [
-            ['icon-restart', () => game.restartLevel()],
-            ['icon-gear', () => game.openSettings()],
             game.levelText
                 ? ['icon-edit', () => leaveGame(this, 'Editor')]
-                : ['icon-home', () => leaveGame(this, 'MainMenu')]
+                : ['icon-home', () => leaveGame(this, 'MainMenu')],
+            ['icon-gear', () => game.openSettings()],
+            ['icon-restart', () => game.restartLevel()]
         ];
         buttons.forEach(([icon, action], i) =>
         {
