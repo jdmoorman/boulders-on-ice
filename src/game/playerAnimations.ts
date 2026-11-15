@@ -4,7 +4,7 @@ import { PLAYER_ANIMATION } from './settings';
 
 export type PlayerAnimKind = 'walk' | 'idle';
 
-//  Frame size in player/openmon/set1-sheet3.png: 3 columns x 4 rows of 18x26 frames.
+//  Frame size in the player sheet: 3 columns x 4 rows of 18x26 frames.
 export const PLAYER_FRAME_WIDTH = 18;
 export const PLAYER_FRAME_HEIGHT = 26;
 const FRAMES_PER_ROW = 3;

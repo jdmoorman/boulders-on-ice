@@ -5,7 +5,7 @@ export interface LevelInfo
 {
     //  Identifies the level, e.g. in saved progress
     key: string;
-    //  Path relative to public/assets. A file can hold several levels separated by blank lines
+    //  Path relative to the assets folder. A file can hold several levels separated by blank lines
     //  (see splitLevels); the Preloader loads each file once, into the text cache under its path.
     file: string;
     //  Which level in the file, counting from 0 (default 0)
@@ -21,7 +21,7 @@ export interface LevelPack
 }
 
 //  All level packs, in order, each with its levels in play order. To add a level, put its .txt
-//  file in public/assets/levels and add an entry to its pack here.
+//  file in the levels folder and add an entry to its pack here.
 const packs: LevelPack[] = [
     {
         name: 'Boulders',

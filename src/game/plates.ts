@@ -4,7 +4,7 @@ import { GridPoint } from './levels/LevelParser';
 //  Pressure plates. For now they do nothing but show whether they're pressed: pressed while the
 //  player or a boulder rests on one (sliding across doesn't count).
 //
-//  Art: plates/ranitaya_plate_press.png and plates/ranitaya_plate_unpress.png, strips of 14x13 frames.
+//  Art: two strips of 14x13 frames.
 //  'plate-press' goes from raised to pressed and 'plate-unpress' back again; each animation plays
 //  every frame of its sheet, so the sheets can have any number of frames.
 

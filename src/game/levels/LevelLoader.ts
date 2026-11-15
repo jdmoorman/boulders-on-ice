@@ -65,7 +65,7 @@ export const GOAL_DEPTH = 0.5;
 //  Pixels per tile of the exit's art
 export const GOAL_ART_TILE_SIZE = 16;
 
-//  Adds the exit on wall tile p: a hole (ranitaya_wall_hole.png) drawn over the wall, standing on
+//  Adds the exit on wall tile p: a hole drawn over the wall, standing on
 //  the bottom edge of the tile like the wall image, and just in front of it
 export function addGoal (scene: Scene, p: GridPoint): GameObjects.Image
 {
@@ -113,7 +113,7 @@ export function addDoor (scene: Scene, p: GridPoint): GameObjects.Sprite
 export function addBoulder (scene: Scene, p: GridPoint): GameObjects.Image
 {
     const { x, y } = tileCenter(p);
-    //  rock.png is 32x32; draw it at one tile
+    //  Drawn at one tile, whatever the image's size
     const boulder = scene.add.image(x, y, 'boulder').setDisplaySize(TILE_SIZE, TILE_SIZE);
     ySortDepth(boulder);
     return boulder;
