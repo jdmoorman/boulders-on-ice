@@ -12,7 +12,8 @@ import { DOOR_CLOSED } from '../doors';
 const BAR_COLOR = 0x24303f;
 const SELECTED_STROKE = 0xf2c230;
 const MESSAGE_MS = 3000;
-const PALETTE_BUTTON_SIZE = 64;
+//  On the square panel, like the other icon buttons (see PANEL_SIZE)
+const PALETTE_BUTTON_SIZE = PANEL_SIZE;
 const PALETTE_STEP = 84;
 const PROGRESS_WIDTH = 200;
 const OPTIONS_WIDTH = 600;
@@ -102,18 +103,19 @@ export class EditorHud extends Scene
         addButton(this, 958, top, 'Play', () => this.editor.play(), { ...size, width: 116 });
 
         //  Bottom bar: the palette (keys 1-9)
-        this.add.rectangle(0, height - 80, width, 80, BAR_COLOR, 0.92).setOrigin(0).setInteractive();
-        const paletteSize = { width: PALETTE_BUTTON_SIZE, height: PALETTE_BUTTON_SIZE };
+        const paletteBarHeight = PALETTE_BUTTON_SIZE + 8;
+        this.add.rectangle(0, height - paletteBarHeight, width, paletteBarHeight, BAR_COLOR, 0.92).setOrigin(0).setInteractive();
+        const paletteSize = { width: PALETTE_BUTTON_SIZE, height: PALETTE_BUTTON_SIZE, panel: true };
         PALETTE.forEach((tool, i) =>
         {
             const x = width / 2 + (i - (PALETTE.length - 1) / 2) * PALETTE_STEP;
-            const y = height - 40;
+            const y = height - paletteBarHeight / 2;
             const button = addIconButton(this, x, y, PALETTE_ICONS[tool], () => this.editor.selectTool(tool), paletteSize);
             this.paletteButtons.set(tool, button);
 
             //  The tool's shortcut key, in the button's top-left corner
             const half = PALETTE_BUTTON_SIZE / 2;
-            this.add.text(x - half + 4, y - half + 2, `${i + 1}`, { ...TEXT_STYLE, fontSize: 16, strokeThickness: 4 });
+            this.add.text(x - half + 6, y - half + 4, `${i + 1}`, { ...TEXT_STYLE, fontSize: 16, strokeThickness: 4 });
         });
         this.highlightTool(this.editor.tool);
 
@@ -253,7 +255,8 @@ export class EditorHud extends Scene
             }
             else
             {
-                button.setStrokeStyle(3, 0x000000);
+                //  No outline: the panel has its own border
+                button.setStrokeStyle();
             }
         }
     }
