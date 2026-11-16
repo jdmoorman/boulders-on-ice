@@ -1,5 +1,5 @@
 import { GridPoint, LevelData, LevelDraft } from '../levels/LevelParser';
-import { isSouthFacingWall, TileIndex } from '../levels/Tiles';
+import { TileIndex } from '../levels/Tiles';
 
 //  'erase' clears a cell completely; 'erase-entity' removes only what stands on it (the player, a
 //  boulder, plate, door or the exit), leaving the snow or ice
@@ -217,11 +217,14 @@ export class EditorLevel
                 break;
 
             case 'exit':
-                //  Only one exit, so this moves it. It goes only in a wall with snow or ice below.
-                if (isSouthFacingWall(this.tiles, x, y))
+                //  Only one exit, so this moves it. It goes in a south-facing wall (no wall below),
+                //  so the cell becomes a wall if it isn't one; a cell with a wall below can't take it.
+                if (this.tiles[y + 1]?.[x] === TileIndex.Wall)
                 {
-                    this.goal = { x, y };
+                    break;
                 }
+                this.setTile(x, y, TileIndex.Wall);
+                this.goal = { x, y };
                 break;
 
             case 'player':
@@ -377,8 +380,7 @@ export class EditorLevel
     }
 
     //  Sets a tile. The player, boulders, plates, doors and traps stand only on snow or ice, so any on a cell
-    //  that becomes something else are removed. The exit is removed once it's no longer in a
-    //  south-facing wall.
+    //  that becomes something else are removed. The exit is removed once its cell isn't a wall.
     private setTile (x: number, y: number, tile: TileIndex)
     {
         const goal = this.goal;
@@ -397,7 +399,7 @@ export class EditorLevel
             this.traps.delete(cellKey(x, y));
         }
         this.tiles[y][x] = tile;
-        if (this.goal && !isSouthFacingWall(this.tiles, this.goal.x, this.goal.y))
+        if (this.goal && this.tiles[this.goal.y][this.goal.x] !== TileIndex.Wall)
         {
             this.goal = null;
         }

@@ -15,7 +15,7 @@ export const PLAIN_TILE_COUNT = TileIndex.Wall + 1;
 export const TILE_SIZE = 64;
 
 //  Things that stand on a snow or ice tile, except the goal: the exit, a hole in a south-facing
-//  wall (see isSouthFacingWall), entered only from the tile below. A plate is a pressure plate,
+//  wall (one with no wall below), entered only from the tile below. A plate is a pressure plate,
 //  pressed while the player or a boulder rests on it; a door is open while every plate is pressed;
 //  a trap arms the first time the player steps on it and restarts the level the second time.
 export type EntityKind = 'player' | 'boulder' | 'goal' | 'plate' | 'door' | 'trap';
@@ -56,10 +56,3 @@ export const BOXOBAN_LEGEND: Readonly<Record<string, LegendEntry>> = {
     '$': { tile: TileIndex.Floor, entity: 'boulder' },
     '@': { tile: TileIndex.Floor, entity: 'player' }
 };
-
-//  Whether (x, y) is a wall with snow or ice right below it: the only place an exit can go
-export function isSouthFacingWall (tiles: number[][], x: number, y: number): boolean
-{
-    const below = tiles[y + 1]?.[x];
-    return tiles[y]?.[x] === TileIndex.Wall && (below === TileIndex.Floor || below === TileIndex.Ice);
-}
