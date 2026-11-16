@@ -201,7 +201,10 @@ export class Game extends Scene
             //  changing a destroyed Text throws
             this.solver?.terminate();
             this.solver = null;
+            //  Take the overlays down with the level, including the completion popup when the
+            //  level is left with Esc instead of through the popup
             this.scene.stop('GameHud');
+            this.scene.stop('LevelComplete');
         });
         this.scene.launch('GameHud');
 
