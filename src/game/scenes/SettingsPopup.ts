@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import { addButton, TEXT_STYLE } from '../ui/Button';
+import { relayoutOnResize } from '../ui/relayout';
 import { changeGameSettings, GameSettings, gameSettings } from '../gameSettings';
 
 const SETTINGS_WIDTH = 600;
@@ -23,6 +24,7 @@ export class SettingsPopup extends Scene
 
     create ()
     {
+        relayoutOnResize(this);
         const { width, height } = this.scale;
         const panelHeight = 160 + Math.max(1, SETTINGS.length) * SETTING_ROW_HEIGHT;
         const left = (width - SETTINGS_WIDTH) / 2;

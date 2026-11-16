@@ -17,11 +17,13 @@ export class Preloader extends Scene
 
     init ()
     {
-        //  A simple progress bar. This is the outline of the bar.
-        this.add.rectangle(512, 384, 468, 32).setStrokeStyle(1, UI_LIGHT);
+        //  A simple progress bar, in the middle of the screen. This is the outline of the bar.
+        const cx = this.scale.width / 2;
+        const cy = this.scale.height / 2;
+        this.add.rectangle(cx, cy, 468, 32).setStrokeStyle(1, UI_LIGHT);
 
         //  This is the progress bar itself. It will increase in size from the left based on the % of progress.
-        const bar = this.add.rectangle(512-230, 384, 4, 28, UI_LIGHT);
+        const bar = this.add.rectangle(cx - 230, cy, 4, 28, UI_LIGHT);
 
         //  Use the 'progress' event emitted by the LoaderPlugin to update the loading bar
         this.load.on('progress', (progress: number) => {

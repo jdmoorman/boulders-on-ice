@@ -1,5 +1,6 @@
 import { Scene, Scenes, GameObjects, Time } from 'phaser';
 import { addButton, addIconButton, ButtonIcon, PANEL_SIZE, TEXT_STYLE, widePanelWidth } from '../ui/Button';
+import { relayoutOnResize } from '../ui/relayout';
 import { TileIndex } from '../levels/Tiles';
 import { AUTOTILE_SETS, ISOLATED_FRAME } from '../levels/autotile';
 import { EditorTool } from '../editor/EditorLevel';
@@ -83,6 +84,11 @@ export class EditorHud extends Scene
         this.messageTimer = null;
         this.optionsPopup = null;
         this.showOptionValues = null;
+        //  The Options popup closes with the restart, so the editor takes input again
+        relayoutOnResize(this, () =>
+        {
+            this.editor.inputLocked = false;
+        });
 
         const { width, height } = this.scale;
 

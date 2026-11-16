@@ -7,7 +7,7 @@ import { SettingsPopup } from './scenes/SettingsPopup';
 import { LevelComplete } from './scenes/LevelComplete';
 import { LevelSelect } from './scenes/LevelSelect';
 import { MainMenu } from './scenes/MainMenu';
-import { AUTO, Game, GameObjects } from 'phaser';
+import { AUTO, Game, GameObjects, Scale } from 'phaser';
 import { Preloader } from './scenes/Preloader';
 
 //  Pixel snapping, for every object in every scene.
@@ -35,8 +35,14 @@ GameObjects.GameObject.prototype.willRoundVertices = function (
 //  https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
 const config: Phaser.Types.Core.GameConfig = {
     type: AUTO,
-    width: 1024,
-    height: 768,
+    //  The canvas fills its container (the whole window; see style.css) and follows its size.
+    //  Screens lay themselves out from the screen's size (see relayoutOnResize), and the level
+    //  and the editor show more of the map on a bigger window.
+    scale: {
+        mode: Scale.RESIZE,
+        width: '100%',
+        height: '100%'
+    },
     parent: 'game-container',
     backgroundColor: '#141a22',
     //  Every camera snaps to whole screen pixels (see the willRoundVertices override above)

@@ -1,6 +1,7 @@
 import { Scene, Input, Time, GameObjects } from 'phaser';
 import { LEVEL_PACKS, LEVELS, LevelPack } from '../levels/levelList';
 import { addButton, addIcon, addIconButton, buttonLabel, buttonPanel, ICON_INSET, TEXT_STYLE, UI_LIGHT_CSS, widePanelHeight } from '../ui/Button';
+import { relayoutOnResize } from '../ui/relayout';
 import { levelThumbnail } from '../levels/thumbnail';
 import { isCompleted, isUnlocked } from '../progress';
 import { checkPack, importPack, removePack } from '../levels/importedPacks';
@@ -66,6 +67,7 @@ export class LevelSelect extends Scene
 
     create (data: LevelSelectData = {})
     {
+        relayoutOnResize(this);
         this.messageTimer = null;
         this.maxScroll = 0;
         this.cameras.main.setScroll(0, 0);

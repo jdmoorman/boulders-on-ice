@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import { addButton, TEXT_STYLE } from '../ui/Button';
+import { relayoutOnResize } from '../ui/relayout';
 import { GameData, GameOrigin, leaveGame, withModifier } from './Game';
 import type { LevelSelectData } from './LevelSelect';
 
@@ -37,6 +38,7 @@ export class LevelComplete extends Scene
 
     create ()
     {
+        relayoutOnResize(this);
         const { width, height } = this.scale;
         const cx = width / 2;
         const cy = height / 2;
