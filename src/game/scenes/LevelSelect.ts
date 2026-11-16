@@ -18,10 +18,10 @@ const REMOVE_SIZE = 56;
 const REMOVE_FILL = 0xb03a3a;
 const REMOVE_FILL_HOVER = 0xd65050;
 
-//  A pack's levels: pages of PER_ROW x ROWS
-const PER_ROW = 5;
-const ROWS = 4;
-export const LEVELS_PER_PAGE = PER_ROW * ROWS;
+//  A pack's levels: pages of up to MAX_PER_ROW x MAX_ROWS, fewer when the screen is too small
+//  (see showPack)
+const MAX_PER_ROW = 5;
+const MAX_ROWS = 4;
 const CELL_W = 152;
 const CELL_H = 120;
 const STEP_X = CELL_W + 24;
@@ -29,6 +29,8 @@ const STEP_Y = CELL_H + 16;
 const GRID_TOP = 165;
 
 const BAR_HEIGHT = 100;
+//  Space kept clear at the screen's sides
+const SIDE_MARGIN = 16;
 const BAR_DEPTH = 10;
 const BAR_BUTTON_GAP = 120;
 const MESSAGE_MS = 4000;
@@ -43,16 +45,18 @@ export interface LevelSelectData
 {
     //  Index into LEVEL_PACKS of the pack to show; the list of packs if not given
     pack?: number;
-    //  Page of that pack, counting from 0; the page with its first unfinished level if not given
-    page?: number;
+    //  A level of that pack, counting from 0, to show the page of; the page with its first
+    //  unfinished level if not given. A level rather than a page, as how many levels fit on a
+    //  page depends on the screen's size.
+    level?: number;
     //  Shown when the screen opens
     message?: string;
 }
 
 //  Level select, in two views. The list of packs shows each pack with how many of its levels are
 //  done, and has Import, which adds a pack from a file of levels (see importedPacks.ts). A pack
-//  shows its levels LEVELS_PER_PAGE at a time as thumbnail buttons, with Prev and Next (or the left
-//  and right arrow keys) to turn pages. Levels after the first in a pack are locked until the one
+//  shows its levels a page at a time (as many as fit on the screen) as thumbnail buttons, with Prev
+//  and Next (or the left and right arrow keys) to turn pages. Levels after the first in a pack are locked until the one
 //  before them is completed (see progress.ts).
 export class LevelSelect extends Scene
 {
@@ -75,7 +79,7 @@ export class LevelSelect extends Scene
         const pack = data.pack === undefined ? undefined : LEVEL_PACKS[data.pack];
         if (pack)
         {
-            this.showPack(data.pack!, pack, data.page);
+            this.showPack(data.pack!, pack, data.level);
         }
         else
         {
@@ -92,23 +96,28 @@ export class LevelSelect extends Scene
     private showPackList ()
     {
         const { width, height } = this.scale;
-        const cx = width / 2;
-        this.add.text(cx, 90, 'Select Level Pack', { ...TEXT_STYLE, fontSize: 60, strokeThickness: 8 }).setOrigin(0.5);
+        fitWidth(this.add.text(width / 2, 90, 'Select Level Pack', { ...TEXT_STYLE, fontSize: 60, strokeThickness: 8 }).setOrigin(0.5),
+            width - SIDE_MARGIN * 2);
 
+        //  As wide as PACK_W if it fits, leaving room for the remove buttons of imported packs
+        const removeRoom = LEVEL_PACKS.some(pack => pack.imported) ? 16 + REMOVE_SIZE : 0;
+        const packW = Math.min(PACK_W, width - SIDE_MARGIN * 2 - removeRoom);
+        const cx = (width - removeRoom) / 2;
         LEVEL_PACKS.forEach((pack, i) =>
         {
             const y = PACKS_TOP + i * PACK_STEP;
             const button = addButton(this, cx, y, pack.name, () => this.scene.restart({ pack: i } satisfies LevelSelectData),
-                { width: PACK_W });
-            buttonLabel(button).setX(cx - PACK_W / 2 + 24).setOrigin(0, 0.5);
+                { width: packW });
             const done = pack.levels.filter(level => isCompleted(level.key)).length;
             const all = done === pack.levels.length;
-            this.add.text(cx + PACK_W / 2 - 24, y, `${all ? '✓ ' : ''}${done} / ${pack.levels.length}`,
+            const count = this.add.text(cx + packW / 2 - 24, y, `${all ? '✓ ' : ''}${done} / ${pack.levels.length}`,
                 { ...TEXT_STYLE, fontSize: 30, color: all ? '#9fe08a' : UI_LIGHT_CSS })
                 .setOrigin(1, 0.5);
+            //  The name, shrunk if it would run into the count
+            fitWidth(buttonLabel(button).setX(cx - packW / 2 + 24).setOrigin(0, 0.5), packW - 48 - count.width - 16);
             if (pack.imported)
             {
-                this.addRemoveButton(cx + PACK_W / 2 + 16 + REMOVE_SIZE / 2, y, pack.name);
+                this.addRemoveButton(cx + packW / 2 + 16 + REMOVE_SIZE / 2, y, pack.name);
             }
         });
 
@@ -152,36 +161,41 @@ export class LevelSelect extends Scene
     }
 
     //  One page of a pack's levels, with Back to the pack list and Prev and Next between pages
-    private showPack (packIndex: number, pack: LevelPack, page?: number)
+    private showPack (packIndex: number, pack: LevelPack, level?: number)
     {
-        const { width } = this.scale;
+        const { width, height } = this.scale;
         const cx = width / 2;
-        const pages = Math.max(1, Math.ceil(pack.levels.length / LEVELS_PER_PAGE));
-        //  Open on the page with the first unfinished level
+        //  As many columns and rows of levels as fit, up to MAX_PER_ROW x MAX_ROWS, and at least one
+        const perRow = Math.max(1, Math.min(MAX_PER_ROW, Math.floor((width - SIDE_MARGIN * 2 + STEP_X - CELL_W) / STEP_X)));
+        const fitRows = Math.floor((height - BAR_HEIGHT - 8 - CELL_H / 2 - GRID_TOP) / STEP_Y) + 1;
+        const perPage = perRow * Math.max(1, Math.min(MAX_ROWS, fitRows));
+        const pages = Math.max(1, Math.ceil(pack.levels.length / perPage));
+        //  Open on the page with the given level, or else the first unfinished one
         const firstUnfinished = Math.max(0, pack.levels.findIndex(level => !isCompleted(level.key)));
-        const current = Math.min(pages - 1, Math.max(0, page ?? Math.floor(firstUnfinished / LEVELS_PER_PAGE)));
+        const current = Math.min(pages - 1, Math.max(0, Math.floor((level ?? firstUnfinished) / perPage)));
         const goTo = (p: number) =>
         {
             if (p >= 0 && p < pages && p !== current)
             {
-                this.scene.restart({ pack: packIndex, page: p } satisfies LevelSelectData);
+                this.scene.restart({ pack: packIndex, level: p * perPage } satisfies LevelSelectData);
             }
         };
 
-        this.add.text(cx, 60, pack.name, { ...TEXT_STYLE, fontSize: 56, strokeThickness: 8 }).setOrigin(0.5);
+        fitWidth(this.add.text(cx, 60, pack.name, { ...TEXT_STYLE, fontSize: 56, strokeThickness: 8 }).setOrigin(0.5),
+            width - SIDE_MARGIN * 2);
 
-        const first = current * LEVELS_PER_PAGE;
-        const onPage = pack.levels.slice(first, first + LEVELS_PER_PAGE);
+        const first = current * perPage;
+        const onPage = pack.levels.slice(first, first + perPage);
         const thumbnails = onPage.map(level => levelThumbnail(this, level, CELL_W - ICON_INSET * 2, CELL_H - ICON_INSET * 2));
         keepThumbnails(this, thumbnails);
 
-        const rows = Math.ceil(onPage.length / PER_ROW);
+        const rows = Math.ceil(onPage.length / perRow);
         onPage.forEach((level, i) =>
         {
-            const row = Math.floor(i / PER_ROW);
-            const col = i % PER_ROW;
+            const row = Math.floor(i / perRow);
+            const col = i % perRow;
             //  Center each row on its own number of buttons, so a short last row is centered too
-            const inRow = row < rows - 1 ? PER_ROW : onPage.length - row * PER_ROW;
+            const inRow = row < rows - 1 ? perRow : onPage.length - row * perRow;
             const x = cx + (col - (inRow - 1) / 2) * STEP_X;
             const y = GRID_TOP + row * STEP_Y;
             const levelIndex = LEVELS.findIndex(l => l.key === level.key);
@@ -235,14 +249,17 @@ export class LevelSelect extends Scene
             .setInteractive();
 
         const y = height - BAR_HEIGHT / 2 + 8;
-        const step = BAR_BUTTON_GAP * 2;
+        //  Spread out, closer together and narrower on a narrow screen
+        const step = Math.min(BAR_BUTTON_GAP * 2, (width - SIDE_MARGIN) / items.length);
+        const buttonW = Math.min(180, step - 8);
         items.forEach(([label, action, enabled = true], i) =>
         {
             const x = cx + (i - (items.length - 1) / 2) * step;
             const objects: GameObjects.GameObject[] = [];
             if (action)
             {
-                const button = addButton(this, x, y, label, action, { width: 180 });
+                const button = addButton(this, x, y, label, action, { width: buttonW });
+                fitWidth(buttonLabel(button), buttonW - 24);
                 if (!enabled)
                 {
                     button.disableInteractive().setAlpha(0.4);
@@ -253,7 +270,7 @@ export class LevelSelect extends Scene
             }
             else
             {
-                objects.push(this.add.text(x, y, label, { ...TEXT_STYLE, fontSize: 36 }).setOrigin(0.5));
+                objects.push(fitWidth(this.add.text(x, y, label, { ...TEXT_STYLE, fontSize: 36 }).setOrigin(0.5), step - 8));
             }
             for (const object of objects as (GameObjects.GameObject & GameObjects.Components.ScrollFactor & GameObjects.Components.Depth)[])
             {
@@ -401,4 +418,10 @@ function keepThumbnails (scene: Scene, keys: readonly string[]): void
     {
         scene.textures.remove(keptThumbnails.shift()!);
     }
+}
+
+//  Shrinks a text, if it's wider than `maxWidth`, to fit
+function fitWidth (text: GameObjects.Text, maxWidth: number): GameObjects.Text
+{
+    return text.width > maxWidth ? text.setScale(Math.max(0.1, maxWidth) / text.width) : text;
 }

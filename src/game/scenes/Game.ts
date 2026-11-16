@@ -4,7 +4,7 @@ import { addBoulder, buildLevel, BuiltLevel, tileCenter, ySortDepth } from '../l
 import { TileIndex } from '../levels/Tiles';
 import { trapArmedFrame, type Trap } from '../traps';
 import { LEVEL_PACKS, LEVELS, isLastInPack, levelText } from '../levels/levelList';
-import { LEVELS_PER_PAGE, LevelSelectData } from './LevelSelect';
+import type { LevelSelectData } from './LevelSelect';
 import { markCompleted } from '../progress';
 import { clearLevelInProgress, fitsLevel, loadLevelInProgress, saveLevelInProgress } from '../levelInProgress';
 import { doorsOpen, resolveMove, startArmedTraps, Direction } from '../movement/Movement';
@@ -398,7 +398,7 @@ export class Game extends Scene
             const level = LEVELS[this.levelIndex];
             const data: LevelSelectData = {
                 pack: LEVEL_PACKS.indexOf(level.pack),
-                page: Math.floor((level.number - 1) / LEVELS_PER_PAGE)
+                level: level.number - 1
             };
             leaveGame(this, 'LevelSelect', data);
         }
