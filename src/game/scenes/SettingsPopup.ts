@@ -72,7 +72,7 @@ export class SettingsPopup extends Scene
         });
 
         addButton(this, width / 2, top + panelHeight - 44, 'Close', () => this.close(),
-            { width: 160, height: 52 });
+            { width: 160 });
 
         this.input.keyboard?.once('keydown-ESC', () => this.close());
     }

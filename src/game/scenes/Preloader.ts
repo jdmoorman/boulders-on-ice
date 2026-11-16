@@ -53,6 +53,7 @@ export class Preloader extends Scene
         this.load.image('icon-restart', 'ui/icons/ranitaya_reset.png');
         this.load.image('icon-lock', 'ui/icons/ranitaya_lock.png');
         this.load.image('ui-panel', 'ui/ranitaya_square_panel.png');
+        this.load.image('ui-wide-panel', 'ui/ranitaya_wide_panel.png');
         loadPlates(this);
         loadDoors(this);
         loadTraps(this);
@@ -70,7 +71,7 @@ export class Preloader extends Scene
         //  For example, you can define global animations here, so we can use them in other scenes.
         //  Keep the scaled-up pixel art sharp (only these textures; others still smooth)
         for (const key of ['player', 'boulder', 'goal', 'floor', 'plate-press', 'plate-unpress', 'door-open', 'door-close', 'trap',
-            'icon-pencil', 'icon-home', 'icon-gear', 'icon-restart', 'icon-lock', 'ui-panel'])
+            'icon-pencil', 'icon-home', 'icon-gear', 'icon-restart', 'icon-lock', 'ui-panel', 'ui-wide-panel'])
         {
             this.textures.get(key).setFilter(Textures.FilterMode.NEAREST);
         }

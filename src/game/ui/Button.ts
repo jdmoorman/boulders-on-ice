@@ -23,7 +23,15 @@ export interface IconButtonOptions extends ButtonSize
     panel?: boolean;
 }
 
+//  Size of a text button made by addButton. Its height is always widePanelHeight.
+export interface TextButtonSize
+{
+    //  At least this wide (see widePanelWidth)
+    width?: number;
+}
+
 const LABEL_KEY = 'label';
+const PANEL_KEY = 'panel';
 //  Multiplied into the panel while the pointer is over it
 const PANEL_HOVER_TINT = 0xb8d0e8;
 
@@ -33,30 +41,103 @@ export function buttonLabel (button: GameObjects.Rectangle): GameObjects.Text
     return button.getData(LABEL_KEY) as GameObjects.Text;
 }
 
+//  The panel image behind a button made by addButton, e.g. to dim it with the button
+export function buttonPanel (button: GameObjects.Rectangle): GameObjects.Container
+{
+    return button.getData(PANEL_KEY) as GameObjects.Container;
+}
+
 const FILL = 0x3d6fa8;
 const FILL_HOVER = 0x5a8fcc;
 
-//  Adds a clickable rectangle button with a centered label and a hover highlight.
+//  The wide panel behind text buttons ('ui-wide-panel', loaded in the Preloader), drawn at
+//  PANEL_SCALE. It can't be narrower than its image, but widens by repeating the 2px slice in
+//  its middle. Its size is read from the loaded image, so the art can be resized.
+const WIDE_PANEL_SLICE_WIDTH = 2;
+
+function widePanelImage (scene: Scene): { width: number, height: number, sliceX: number }
+{
+    //  The whole image ('__BASE'): once the frames below are added, Phaser's default frame is the first of them
+    const { width, height } = scene.textures.getFrame('ui-wide-panel', '__BASE');
+    return { width, height, sliceX: width / 2 - WIDE_PANEL_SLICE_WIDTH / 2 };
+}
+
+//  The panel's width in its own pixels for a button at least `width` wide: the image's width
+//  plus as many slices as needed
+function widePanelPixels (scene: Scene, width: number): number
+{
+    const image = widePanelImage(scene);
+    const extra = Math.max(0, Math.ceil((width / PANEL_SCALE - image.width) / WIDE_PANEL_SLICE_WIDTH));
+    return image.width + extra * WIDE_PANEL_SLICE_WIDTH;
+}
+
+//  The width a text button asked to be at least `width` wide actually gets
+export function widePanelWidth (scene: Scene, width: number): number
+{
+    return widePanelPixels(scene, width) * PANEL_SCALE;
+}
+
+//  The height of every text button
+export function widePanelHeight (scene: Scene): number
+{
+    return widePanelImage(scene).height * PANEL_SCALE;
+}
+
+//  The wide panel at `pixels` wide (in its own pixels), centred on (x, y) at PANEL_SCALE: its
+//  left and right ends, and the middle slice between them. The slice's two columns are the same,
+//  so stretching it looks the same as repeating it.
+function addWidePanel (scene: Scene, x: number, y: number, pixels: number): GameObjects.Container
+{
+    const texture = scene.textures.get('ui-wide-panel');
+    const { width: w, height: h, sliceX } = widePanelImage(scene);
+    const sliceW = WIDE_PANEL_SLICE_WIDTH;
+    const rightW = w - sliceX - sliceW;
+    if (!texture.has('left'))
+    {
+        texture.add('left', 0, 0, 0, sliceX, h);
+        texture.add('slice', 0, sliceX, 0, sliceW, h);
+        texture.add('right', 0, sliceX + sliceW, 0, rightW, h);
+    }
+    const half = pixels * PANEL_SCALE / 2;
+    const parts = [
+        scene.add.image(-half, 0, 'ui-wide-panel', 'left').setOrigin(0, 0.5).setScale(PANEL_SCALE),
+        scene.add.image(0, 0, 'ui-wide-panel', 'slice')
+            .setDisplaySize((pixels - sliceX - rightW) * PANEL_SCALE, h * PANEL_SCALE),
+        scene.add.image(half, 0, 'ui-wide-panel', 'right').setOrigin(1, 0.5).setScale(PANEL_SCALE)
+    ];
+    return scene.add.container(x, y, parts).setSize(pixels * PANEL_SCALE, h * PANEL_SCALE);
+}
+
+//  Adds a clickable button with a centred label on the wide panel, at least `width` wide (see
+//  widePanelWidth) and widePanelHeight tall, tinted while the pointer is over it. The
+//  returned rectangle is the (invisible) clickable area; an outline set on it shows over the
+//  panel.
 export function addButton (
     scene: Scene,
     x: number,
     y: number,
     label: string,
     onClick: () => void,
-    { width = 200, height = 64 }: ButtonSize = {}
+    { width = 200 }: TextButtonSize = {}
 ): GameObjects.Rectangle
 {
-    const button = scene.add.rectangle(x, y, width, height, FILL)
-        .setStrokeStyle(3, 0x000000)
+    const panel = addWidePanel(scene, x, y, widePanelPixels(scene, width));
+    const button = scene.add.rectangle(x, y, panel.width, panel.height, FILL, 0)
         .setInteractive({ useHandCursor: true });
 
     const text = scene.add.text(x, y, label, { ...TEXT_STYLE, fontSize: 28 }).setOrigin(0.5);
-    //  Destroying the button takes its label with it
-    button.once(GameObjects.Events.DESTROY, () => text.destroy());
+    //  Destroying the button takes its label and panel with it
+    button.once(GameObjects.Events.DESTROY, () =>
+    {
+        text.destroy();
+        panel.destroy();
+    });
     button.setData(LABEL_KEY, text);
+    button.setData(PANEL_KEY, panel);
 
-    button.on('pointerover', () => button.setFillStyle(FILL_HOVER));
-    button.on('pointerout', () => button.setFillStyle(FILL));
+    const parts = panel.list as GameObjects.Image[];
+    button.on('pointerover', () => parts.forEach(part => part.setTint(PANEL_HOVER_TINT)));
+    button.on('pointerout', () => parts.forEach(part => part.clearTint()));
     button.on('pointerup', onClick);
 
     return button;

@@ -1,5 +1,5 @@
 import { Scene, Scenes, GameObjects, Time } from 'phaser';
-import { addButton, addIconButton, ButtonIcon, PANEL_SIZE, TEXT_STYLE } from '../ui/Button';
+import { addButton, addIconButton, ButtonIcon, PANEL_SIZE, TEXT_STYLE, widePanelWidth } from '../ui/Button';
 import { TileIndex } from '../levels/Tiles';
 import { AUTOTILE_SETS, ISOLATED_FRAME } from '../levels/autotile';
 import { EditorTool } from '../editor/EditorLevel';
@@ -91,16 +91,29 @@ export class EditorHud extends Scene
         const barHeight = PANEL_SIZE + 8;
         this.add.rectangle(0, 0, width, barHeight, BAR_COLOR, 0.92).setOrigin(0).setInteractive();
         const top = barHeight / 2;
-        //  The icon buttons' size (see PANEL_SIZE), so the whole row is the same height
-        const size = { height: PANEL_SIZE };
-        addButton(this, 80, top, 'Menu', () => this.editor.toMainMenu(), { ...size, width: 130 });
-        addIconButton(this, 200, top, [{ key: 'icon-undo' }], () => this.editor.undo(), { ...size, width: PANEL_SIZE, panel: true });
-        addIconButton(this, 286, top, [{ key: 'icon-redo' }], () => this.editor.redo(), { ...size, width: PANEL_SIZE, panel: true });
-        this.analyzeButton = addButton(this, 440, top, 'Analyze', () => this.editor.toggleAnalysis(), { ...size, width: 160 });
-        addIconButton(this, 562, top, [{ key: 'icon-gear' }], () => this.openOptions(), { ...size, width: PANEL_SIZE, panel: true });
-        addButton(this, 674, top, 'Import', () => this.editor.importLevel(), { ...size, width: 140 });
-        addButton(this, 822, top, 'Export', () => this.editor.exportLevel(), { ...size, width: 140 });
-        addButton(this, 958, top, 'Play', () => this.editor.play(), { ...size, width: 116 });
+        //  Laid out left to right with even gaps. Text buttons are at least as wide as asked (see
+        //  widePanelWidth); icon buttons are PANEL_SIZE square.
+        const icon = { width: PANEL_SIZE, height: PANEL_SIZE, panel: true };
+        const items: { width: number, add: (x: number) => void }[] = [
+            { width: widePanelWidth(this, 130), add: x => addButton(this, x, top, 'Menu', () => this.editor.toMainMenu(), { width: 130 }) },
+            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-undo' }], () => this.editor.undo(), icon) },
+            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-redo' }], () => this.editor.redo(), icon) },
+            { width: widePanelWidth(this, 160), add: x =>
+            {
+                this.analyzeButton = addButton(this, x, top, 'Analyze', () => this.editor.toggleAnalysis(), { width: 160 });
+            } },
+            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-gear' }], () => this.openOptions(), icon) },
+            { width: widePanelWidth(this, 140), add: x => addButton(this, x, top, 'Import', () => this.editor.importLevel(), { width: 140 }) },
+            { width: widePanelWidth(this, 140), add: x => addButton(this, x, top, 'Export', () => this.editor.exportLevel(), { width: 140 }) },
+            { width: widePanelWidth(this, 116), add: x => addButton(this, x, top, 'Play', () => this.editor.play(), { width: 116 }) }
+        ];
+        const gap = (width - items.reduce((sum, item) => sum + item.width, 0)) / (items.length + 1);
+        let left = gap;
+        for (const item of items)
+        {
+            item.add(left + item.width / 2);
+            left += item.width + gap;
+        }
 
         //  Bottom bar: the palette (keys 1-9)
         const paletteBarHeight = PALETTE_BUTTON_SIZE + 8;
@@ -205,7 +218,7 @@ export class EditorHud extends Scene
         this.showOptionValues();
 
         objects.push(addButton(this, width / 2, top + panelHeight - 44, 'Close', () => this.closeOptions(),
-            { width: 160, height: 52 }));
+            { width: 160 }));
         this.optionsPopup = objects;
     }
 
@@ -228,7 +241,15 @@ export class EditorHud extends Scene
         const analyzing = this.editor.isAnalyzing;
         const progress = this.editor.analysisProgress;
 
-        this.analyzeButton.setStrokeStyle(analyzing ? 5 : 3, analyzing ? SELECTED_STROKE : 0x000000);
+        //  Outlined in gold while analysing; otherwise just the panel
+        if (analyzing)
+        {
+            this.analyzeButton.setStrokeStyle(5, SELECTED_STROKE);
+        }
+        else
+        {
+            this.analyzeButton.setStrokeStyle();
+        }
 
         const showText = analyzing || (progress?.running ?? false);
         const showBar = showText && progress !== null;

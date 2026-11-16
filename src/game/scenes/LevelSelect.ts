@@ -1,6 +1,6 @@
 import { Scene, Input, Time, GameObjects } from 'phaser';
 import { LEVEL_PACKS, LEVELS, LevelPack } from '../levels/levelList';
-import { addButton, addIconButton, buttonLabel, ICON_INSET, TEXT_STYLE, UI_LIGHT_CSS } from '../ui/Button';
+import { addButton, addIconButton, buttonLabel, buttonPanel, ICON_INSET, TEXT_STYLE, UI_LIGHT_CSS, widePanelHeight } from '../ui/Button';
 import { levelThumbnail } from '../levels/thumbnail';
 import { isCompleted, isUnlocked } from '../progress';
 import { checkPack, importPack, removePack } from '../levels/importedPacks';
@@ -9,7 +9,6 @@ import type { GameData } from './Game';
 
 //  Pack list
 const PACK_W = 640;
-const PACK_H = 72;
 const PACK_STEP = 88;
 const PACKS_TOP = 190;
 const KEY_SCROLL = 80;
@@ -98,7 +97,7 @@ export class LevelSelect extends Scene
         {
             const y = PACKS_TOP + i * PACK_STEP;
             const button = addButton(this, cx, y, pack.name, () => this.scene.restart({ pack: i } satisfies LevelSelectData),
-                { width: PACK_W, height: PACK_H });
+                { width: PACK_W });
             buttonLabel(button).setX(cx - PACK_W / 2 + 24).setOrigin(0, 0.5);
             const done = pack.levels.filter(level => isCompleted(level.key)).length;
             const all = done === pack.levels.length;
@@ -111,7 +110,7 @@ export class LevelSelect extends Scene
             }
         });
 
-        const bottom = PACKS_TOP + (LEVEL_PACKS.length - 1) * PACK_STEP + PACK_H / 2 + 40;
+        const bottom = PACKS_TOP + (LEVEL_PACKS.length - 1) * PACK_STEP + widePanelHeight(this) / 2 + 40;
         this.maxScroll = Math.max(0, bottom - (height - BAR_HEIGHT));
 
         this.addBar([
@@ -246,8 +245,9 @@ export class LevelSelect extends Scene
                 {
                     button.disableInteractive().setAlpha(0.4);
                     buttonLabel(button).setAlpha(0.4);
+                    buttonPanel(button).setAlpha(0.4);
                 }
-                objects.push(button, buttonLabel(button));
+                objects.push(buttonPanel(button), button, buttonLabel(button));
             }
             else
             {
