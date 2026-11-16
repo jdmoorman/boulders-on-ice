@@ -20,10 +20,11 @@ export function loadTraps (scene: Scene): void
     scene.load.spritesheet('trap', 'traps/ranitaya_rune_trap.png', { frameWidth: TRAP_FRAME_SIZE, frameHeight: TRAP_FRAME_SIZE });
 }
 
-//  The last frame of the arming half: an armed trap at rest
+//  The last frame of the arming half: an armed trap at rest. With an odd number of frames, arming
+//  gets the extra one. (frameTotal counts the whole-texture frame too.)
 export function trapArmedFrame (scene: Scene): number
 {
-    return Math.floor((scene.textures.get('trap').frameTotal - 2) / 2);
+    return Math.floor((scene.textures.get('trap').frameTotal - 1) / 2);
 }
 
 //  Registers 'trap-arm' and 'trap-spring', splitting the sheet in half, and 'trap-close'. Animations are global, so
