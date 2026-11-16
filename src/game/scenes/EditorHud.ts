@@ -1,5 +1,5 @@
 import { Scene, Scenes, GameObjects, Time } from 'phaser';
-import { addButton, addIconButton, ButtonIcon, PANEL_SIZE, TEXT_STYLE, widePanelWidth } from '../ui/Button';
+import { addButton, addIconButton, ButtonIcon, PANEL_SIZE, TEXT_STYLE } from '../ui/Button';
 import { relayoutOnResize } from '../ui/relayout';
 import { TileIndex } from '../levels/Tiles';
 import { AUTOTILE_SETS, ISOLATED_FRAME } from '../levels/autotile';
@@ -90,16 +90,15 @@ export class EditorHud extends Scene
 
         const { width, height } = this.scale;
 
-        //  Top bar: Menu, Undo and Redo on the left; Import, Export and Play on the right
+        //  Top bar: home (the main menu), undo, redo, options, import, export and play
         //  A little taller than the buttons in it
         const barHeight = PANEL_SIZE + 8;
         this.add.rectangle(0, 0, width, barHeight, BAR_COLOR, 0.92).setOrigin(0).setInteractive();
         const top = barHeight / 2;
-        //  Laid out left to right with even gaps. Text buttons are at least as wide as asked (see
-        //  widePanelWidth); icon buttons are PANEL_SIZE square.
+        //  Laid out left to right with even gaps; each is PANEL_SIZE square
         const icon = { width: PANEL_SIZE, height: PANEL_SIZE, panel: true };
         const items: { width: number, add: (x: number) => void }[] = [
-            { width: widePanelWidth(this, 130), add: x => addButton(this, x, top, 'Menu', () => this.editor.toMainMenu(), { width: 130 }) },
+            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-home' }], () => this.editor.toMainMenu(), icon) },
             { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-undo' }], () => this.editor.undo(), icon) },
             { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-redo' }], () => this.editor.redo(), icon) },
             { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-gear' }], () => this.openOptions(), icon) },
@@ -172,7 +171,7 @@ export class EditorHud extends Scene
             listeners.forEach(([event, fn]) => this.editor.events.off(event, fn));
         });
         //  Esc closes the Options popup if it's open, and otherwise leaves for the main menu, like
-        //  the Menu button
+        //  the home button
         this.input.keyboard?.on('keydown-ESC', () =>
         {
             if (this.optionsPopup)
