@@ -18,15 +18,14 @@ const PALETTE_BUTTON_SIZE = PANEL_SIZE;
 const PALETTE_STEP = 84;
 const PROGRESS_WIDTH = 200;
 const OPTIONS_WIDTH = 600;
-const OPTION_ROW_HEIGHT = 90;
+const OPTION_ROW_HEIGHT = 60;
 const CHECKBOX_SIZE = 36;
 
 //  The on/off settings in the Options popup, in order
-const OPTIONS: readonly { key: keyof EditorSettings, label: string, description: string }[] = [
+const OPTIONS: readonly { key: keyof EditorSettings, label: string }[] = [
     {
         key: 'freeSnowWalking',
-        label: 'Free walking on snow',
-        description: "Analysis doesn't count steps from snow to snow, except onto traps."
+        label: 'Free walking on snow'
     }
 ];
 
@@ -62,7 +61,6 @@ export class EditorHud extends Scene
     private paletteButtons = new Map<EditorTool, GameObjects.Rectangle>();
     private messageText: GameObjects.Text;
     private messageTimer: Time.TimerEvent | null = null;
-    private analyzeButton: GameObjects.Rectangle;
     //  The analysis search's progress, under the top bar
     private progressTrack: GameObjects.Rectangle;
     private progressFill: GameObjects.Rectangle;
@@ -104,10 +102,6 @@ export class EditorHud extends Scene
             { width: widePanelWidth(this, 130), add: x => addButton(this, x, top, 'Menu', () => this.editor.toMainMenu(), { width: 130 }) },
             { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-undo' }], () => this.editor.undo(), icon) },
             { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-redo' }], () => this.editor.redo(), icon) },
-            { width: widePanelWidth(this, 160), add: x =>
-            {
-                this.analyzeButton = addButton(this, x, top, 'Analyze', () => this.editor.toggleAnalysis(), { width: 160 });
-            } },
             { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-gear' }], () => this.openOptions(), icon) },
             { width: widePanelWidth(this, 140), add: x => addButton(this, x, top, 'Import', () => this.editor.importLevel(), { width: 140 }) },
             { width: widePanelWidth(this, 140), add: x => addButton(this, x, top, 'Export', () => this.editor.exportLevel(), { width: 140 }) },
@@ -159,7 +153,11 @@ export class EditorHud extends Scene
 
         const onTool = (tool: EditorTool) => this.highlightTool(tool);
         const onMessage = (text: string) => this.showMessage(text);
-        const onAnalysis = () => this.showAnalysis();
+        const onAnalysis = () =>
+        {
+            this.showAnalysis();
+            this.showOptionValues?.();
+        };
         const onSettings = () => this.showOptionValues?.();
         const listeners: [string, (...args: never[]) => void][] = [
             [EDITOR_EVENTS.TOOL, onTool],
@@ -199,7 +197,20 @@ export class EditorHud extends Scene
         }
         this.editor.inputLocked = true;
         const { width, height } = this.scale;
-        const panelHeight = 160 + OPTIONS.length * OPTION_ROW_HEIGHT;
+        //  Analysis mode first (also A), then the settings
+        const rows: { label: string, isOn: () => boolean, toggle: () => void }[] = [
+            {
+                label: 'Analyze',
+                isOn: () => this.editor.isAnalyzing,
+                toggle: () => this.editor.toggleAnalysis()
+            },
+            ...OPTIONS.map(({ key, label }) => ({
+                label,
+                isOn: () => this.editor.editorSettings[key],
+                toggle: () => this.editor.changeSettings({ [key]: !this.editor.editorSettings[key] })
+            }))
+        ];
+        const panelHeight = 160 + rows.length * OPTION_ROW_HEIGHT;
         const left = (width - OPTIONS_WIDTH) / 2;
         const top = (height - panelHeight) / 2;
         const objects: GameObjects.GameObject[] = [];
@@ -216,10 +227,9 @@ export class EditorHud extends Scene
         objects.push(this.add.text(width / 2, top + 40, 'Editor Options', { ...TEXT_STYLE, fontSize: 40 })
             .setOrigin(0.5));
 
-        const updates = OPTIONS.map(({ key, label, description }, i) =>
+        const updates = rows.map(({ label, isOn, toggle }, i) =>
         {
             const y = top + 90 + i * OPTION_ROW_HEIGHT;
-            const toggle = () => this.editor.changeSettings({ [key]: !this.editor.editorSettings[key] });
 
             const box = this.add.rectangle(left + 32, y, CHECKBOX_SIZE, CHECKBOX_SIZE, 0x000000, 0.5)
                 .setOrigin(0)
@@ -233,11 +243,9 @@ export class EditorHud extends Scene
                 .setOrigin(0, 0.5)
                 .setInteractive({ useHandCursor: true })
                 .on('pointerup', toggle);
-            const note = this.add.text(textX, y + CHECKBOX_SIZE + 8, description,
-                { ...TEXT_STYLE, fontSize: 20, strokeThickness: 4, align: 'left' });
-            objects.push(box, check, title, note);
+            objects.push(box, check, title);
 
-            return () => check.setVisible(this.editor.editorSettings[key]);
+            return () => check.setVisible(isOn());
         });
         this.showOptionValues = () => updates.forEach(update => update());
         this.showOptionValues();
@@ -259,22 +267,11 @@ export class EditorHud extends Scene
         this.editor.inputLocked = false;
     }
 
-    //  Shows whether analysis mode is on and how the search is going. The progress shows while
-    //  the search runs, and always in analysis mode.
+    //  Shows how the analysis search is going: while it runs, and always in analysis mode
     private showAnalysis ()
     {
         const analyzing = this.editor.isAnalyzing;
         const progress = this.editor.analysisProgress;
-
-        //  Outlined in gold while analysing; otherwise just the panel
-        if (analyzing)
-        {
-            this.analyzeButton.setStrokeStyle(5, SELECTED_STROKE);
-        }
-        else
-        {
-            this.analyzeButton.setStrokeStyle();
-        }
 
         const showText = analyzing || (progress?.running ?? false);
         const showBar = showText && progress !== null;
