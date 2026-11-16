@@ -129,13 +129,13 @@ export class LevelSelect extends Scene
         }
     }
 
-    //  A red ✕ that removes an imported pack, after asking
+    //  A red button with an X that removes an imported pack, after asking
     private addRemoveButton (x: number, y: number, name: string)
     {
         const button = this.add.rectangle(x, y, REMOVE_SIZE, REMOVE_SIZE, REMOVE_FILL)
             .setStrokeStyle(3, 0x000000)
             .setInteractive({ useHandCursor: true });
-        this.add.text(x, y, '✕', { ...TEXT_STYLE, fontSize: 38 }).setOrigin(0.5);
+        addIcon(this, x, y, 'icon-x', undefined, 3);
         button.on('pointerover', () => button.setFillStyle(REMOVE_FILL_HOVER));
         button.on('pointerout', () => button.setFillStyle(REMOVE_FILL));
         button.on('pointerup', () =>

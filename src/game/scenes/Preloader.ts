@@ -55,6 +55,7 @@ export class Preloader extends Scene
         this.load.image('icon-gear', 'ui/icons/ranitaya_settings.png');
         this.load.image('icon-restart', 'ui/icons/ranitaya_reset.png');
         this.load.image('icon-lock', 'ui/icons/ranitaya_lock.png');
+        this.load.image('icon-x', 'ui/icons/ranitaya_x.png');
         //  Undo; redo is its mirror image (see create)
         this.load.image('icon-undo', 'ui/icons/ranitaya_undo.png');
         this.load.image('ui-panel', 'ui/ranitaya_square_panel.png');
@@ -76,7 +77,7 @@ export class Preloader extends Scene
         //  For example, you can define global animations here, so we can use them in other scenes.
         //  Keep the scaled-up pixel art sharp (only these textures; others still smooth)
         addMirroredTexture(this, 'icon-redo', 'icon-undo');
-        const icons = ['icon-pencil', 'icon-home', 'icon-gear', 'icon-restart', 'icon-lock', 'icon-undo', 'icon-redo'];
+        const icons = ['icon-pencil', 'icon-home', 'icon-gear', 'icon-restart', 'icon-lock', 'icon-x', 'icon-undo', 'icon-redo'];
         for (const key of ['player', 'boulder', 'goal', 'floor', 'plate-press', 'plate-unpress', 'door-open', 'door-close', 'trap',
             ...icons, 'ui-panel', 'ui-wide-panel'])
         {
