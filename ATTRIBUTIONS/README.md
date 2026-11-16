@@ -10,7 +10,7 @@
 
 ### Font
 
-- [PixelifySans.ttf](../public/assets/fonts/PixelifySans.ttf), [Pixelify Sans](https://github.com/eifetx/Pixelify-Sans) by Stefie Justprince. Licensed under the [SIL Open Font License 1.1](../public/assets/fonts/OFL.txt).
+- [PixelifySans.ttf](../public/assets/fonts/PixelifySans.ttf), [Pixelify Sans](https://github.com/eifetx/Pixelify-Sans) by Stefie Justprince. Licensed under the [SIL Open Font License 1.1](./LICENSE-PIXELIFY-OFL.txt).
 
 ### Levels
 
@@ -18,4 +18,4 @@
 
 ### Phaser
 
-The initial phaser template was generated with the [`create-phaser-game`](https://github.com/phaserjs/create-game) app. As such, the original MIT license is included in [LICENSE-PHASER](./LICENSE-PHASER).
+The initial phaser template was generated with the [`create-phaser-game`](https://github.com/phaserjs/create-game) app. As such, the original MIT license is included in [LICENSE-PHASER](./LICENSE-PHASER-MIT).
