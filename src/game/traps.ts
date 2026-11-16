@@ -5,11 +5,11 @@ import { GridPoint } from './levels/LevelParser';
 //  lights up. The second time it springs: the floor slides away into a pit. A player who falls in
 //  starts the level over; a boulder that falls in is gone, and the trap closes again, unarmed.
 //
-//  Art: a strip of 32x32 frames: arming is the first half of the
+//  Art: a strip of 16x16 frames: arming is the first half of the
 //  strip (ending on the lit rune) and springing is the rest. Closing plays the whole strip
 //  backwards: the pit closes, then the slab rises and its rune goes dark.
 
-export const TRAP_FRAME_SIZE = 32;
+export const TRAP_FRAME_SIZE = 16;
 const TRAP_FPS = 12;
 
 //  Loads the trap sheet. Call from the Preloader's preload().
