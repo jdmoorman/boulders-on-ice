@@ -118,14 +118,15 @@ export class EditorHud extends Scene
         this.highlightTool(this.editor.tool);
 
         //  Progress bar and text, under the top bar
-        this.progressTrack = this.add.rectangle(16, 80, PROGRESS_WIDTH, 12, 0x000000, 0.5)
+        const progressY = barHeight + 8;
+        this.progressTrack = this.add.rectangle(16, progressY, PROGRESS_WIDTH, 12, 0x000000, 0.5)
             .setOrigin(0)
             .setStrokeStyle(2, 0x000000);
-        this.progressFill = this.add.rectangle(16, 80, PROGRESS_WIDTH, 12, SELECTED_STROKE).setOrigin(0);
-        this.progressText = this.add.text(16 + PROGRESS_WIDTH + 12, 86, '', { ...TEXT_STYLE, fontSize: 16, strokeThickness: 4 })
+        this.progressFill = this.add.rectangle(16, progressY, PROGRESS_WIDTH, 12, SELECTED_STROKE).setOrigin(0);
+        this.progressText = this.add.text(16 + PROGRESS_WIDTH + 12, progressY + 6, '', { ...TEXT_STYLE, fontSize: 16, strokeThickness: 4 })
             .setOrigin(0, 0.5);
 
-        this.messageText = this.add.text(width / 2, 124, '', { ...TEXT_STYLE, fontSize: 24, strokeThickness: 5 })
+        this.messageText = this.add.text(width / 2, barHeight + 52, '', { ...TEXT_STYLE, fontSize: 24, strokeThickness: 5 })
             .setOrigin(0.5);
 
         const onTool = (tool: EditorTool) => this.highlightTool(tool);
