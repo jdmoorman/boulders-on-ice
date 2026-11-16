@@ -121,14 +121,21 @@ export class EditorHud extends Scene
             left += item.width + gap;
         }
 
-        //  Bottom bar: the palette (keys 1-9)
-        const paletteBarHeight = PALETTE_BUTTON_SIZE + 8;
+        //  Bottom bar: the palette (keys 1-9), in one row if the screen is wide enough, or else in
+        //  as few rows as fit, as evenly filled as possible, each centred
+        const gapAround = PALETTE_STEP - PALETTE_BUTTON_SIZE;
+        const fit = Math.max(1, Math.floor((width - gapAround) / PALETTE_STEP));
+        const rows = Math.ceil(PALETTE.length / fit);
+        const perRow = Math.ceil(PALETTE.length / rows);
+        const paletteBarHeight = PALETTE_BUTTON_SIZE + 8 + (rows - 1) * PALETTE_STEP;
         this.add.rectangle(0, height - paletteBarHeight, width, paletteBarHeight, BAR_COLOR, 0.92).setOrigin(0).setInteractive();
         const paletteSize = { width: PALETTE_BUTTON_SIZE, height: PALETTE_BUTTON_SIZE, panel: true };
         PALETTE.forEach((tool, i) =>
         {
-            const x = width / 2 + (i - (PALETTE.length - 1) / 2) * PALETTE_STEP;
-            const y = height - paletteBarHeight / 2;
+            const row = Math.floor(i / perRow);
+            const inRow = Math.min(perRow, PALETTE.length - row * perRow);
+            const x = width / 2 + (i % perRow - (inRow - 1) / 2) * PALETTE_STEP;
+            const y = height - paletteBarHeight + 4 + PALETTE_BUTTON_SIZE / 2 + row * PALETTE_STEP;
             const button = addIconButton(this, x, y, PALETTE_ICONS[tool], () => this.editor.selectTool(tool), paletteSize);
             this.paletteButtons.set(tool, button);
 
