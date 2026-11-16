@@ -59,6 +59,7 @@ export class EditorHud extends Scene
 {
     private editor: Editor;
     private paletteButtons = new Map<EditorTool, GameObjects.Rectangle>();
+    private selection: GameObjects.Rectangle;
     private messageText: GameObjects.Text;
     private messageTimer: Time.TimerEvent | null = null;
     //  The analysis search's progress, under the top bar
@@ -114,21 +115,24 @@ export class EditorHud extends Scene
             left += item.width + gap;
         }
 
-        //  Bottom bar: the palette (keys 1-9), in one row if the screen is wide enough, or else in
-        //  as few rows as fit, as evenly filled as possible, each centred
-        const gapAround = PALETTE_STEP - PALETTE_BUTTON_SIZE;
-        const fit = Math.max(1, Math.floor((width - gapAround) / PALETTE_STEP));
-        const rows = Math.ceil(PALETTE.length / fit);
+        //  Bottom bar: the palette (keys 1-9). In one row while the screen is wide enough, the gaps
+        //  between buttons shrinking as it narrows until the buttons touch. Narrower than that, in
+        //  as few rows as fit, as evenly filled as possible and each centred, with the buttons
+        //  touching, to take as little of the screen as possible. The bar has a small margin.
+        const oneRow = PALETTE.length * PALETTE_BUTTON_SIZE <= width;
+        const step = oneRow ? Math.min(PALETTE_STEP, width / PALETTE.length) : PALETTE_BUTTON_SIZE;
+        const rows = oneRow ? 1 : Math.ceil(PALETTE.length / Math.max(1, Math.floor(width / PALETTE_BUTTON_SIZE)));
         const perRow = Math.ceil(PALETTE.length / rows);
-        const paletteBarHeight = PALETTE_BUTTON_SIZE + 8 + (rows - 1) * PALETTE_STEP;
+        const padding = 4;
+        const paletteBarHeight = rows * PALETTE_BUTTON_SIZE + padding * 2;
         this.add.rectangle(0, height - paletteBarHeight, width, paletteBarHeight, BAR_COLOR, 0.92).setOrigin(0).setInteractive();
         const paletteSize = { width: PALETTE_BUTTON_SIZE, height: PALETTE_BUTTON_SIZE, panel: true };
         PALETTE.forEach((tool, i) =>
         {
             const row = Math.floor(i / perRow);
             const inRow = Math.min(perRow, PALETTE.length - row * perRow);
-            const x = width / 2 + (i % perRow - (inRow - 1) / 2) * PALETTE_STEP;
-            const y = height - paletteBarHeight + 4 + PALETTE_BUTTON_SIZE / 2 + row * PALETTE_STEP;
+            const x = width / 2 + (i % perRow - (inRow - 1) / 2) * step;
+            const y = height - paletteBarHeight + padding + PALETTE_BUTTON_SIZE / 2 + row * PALETTE_BUTTON_SIZE;
             const button = addIconButton(this, x, y, PALETTE_ICONS[tool], () => this.editor.selectTool(tool), paletteSize);
             this.paletteButtons.set(tool, button);
 
@@ -136,6 +140,10 @@ export class EditorHud extends Scene
             const half = PALETTE_BUTTON_SIZE / 2;
             this.add.text(x - half + 6, y - half + 4, `${i + 1}`, { ...TEXT_STYLE, fontSize: 20, strokeThickness: 4 });
         });
+        //  The selected tool's gold outline: one outline, moved to the selected button, added after
+        //  every button so it's drawn over the neighbours it overlaps where they touch
+        this.selection = this.add.rectangle(0, 0, PALETTE_BUTTON_SIZE, PALETTE_BUTTON_SIZE)
+            .setStrokeStyle(5, SELECTED_STROKE);
         this.highlightTool(this.editor.tool);
 
         //  Progress bar and text, under the top bar
@@ -289,17 +297,11 @@ export class EditorHud extends Scene
 
     private highlightTool (selected: EditorTool)
     {
-        for (const [tool, button] of this.paletteButtons)
+        const button = this.paletteButtons.get(selected);
+        this.selection.setVisible(button !== undefined);
+        if (button)
         {
-            if (tool === selected)
-            {
-                button.setStrokeStyle(5, SELECTED_STROKE);
-            }
-            else
-            {
-                //  No outline: the panel has its own border
-                button.setStrokeStyle();
-            }
+            this.selection.setPosition(button.x, button.y);
         }
     }
 
