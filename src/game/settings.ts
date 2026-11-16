@@ -12,6 +12,13 @@ export const PLATES = {
     pressLeadMs: 100
 };
 
+//  Rune traps
+export const TRAPS = {
+    //  How long (ms) the open pit stays on screen after the player falls in, before the level
+    //  starts over
+    restartDelayMs: 500
+};
+
 //  Player sprite animation speed (frames per second). Standing is a single frame.
 export const PLAYER_ANIMATION = {
     walkFps: 6

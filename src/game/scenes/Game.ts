@@ -8,7 +8,7 @@ import { LEVELS_PER_PAGE, LevelSelectData } from './LevelSelect';
 import { markCompleted } from '../progress';
 import { clearLevelInProgress, fitsLevel, loadLevelInProgress, saveLevelInProgress } from '../levelInProgress';
 import { doorsOpen, resolveMove, startArmedTraps, Direction } from '../movement/Movement';
-import { MOVEMENT, PLATES } from '../settings';
+import { MOVEMENT, PLATES, TRAPS } from '../settings';
 import { gameSettings } from '../gameSettings';
 import { TEXT_STYLE } from '../ui/Button';
 import { HUD_BUTTON_SIZE, HUD_MARGIN } from './GameHud';
@@ -391,7 +391,7 @@ export class Game extends Scene
     }
 
     //  If the player has stopped on a trap: arms it the first time, and springs it the second,
-    //  dropping the player into the pit and restarting the level once the animation ends
+    //  dropping the player into the pit and restarting the level a moment after the animation ends
     private stepOnTrap ()
     {
         const trap = this.trapAt(this.playerPos);
@@ -415,7 +415,9 @@ export class Game extends Scene
         const duration = trap.sprite.anims.duration;
         //  The player shrinks and fades as they fall into the opening pit
         this.tweens.add({ targets: player, scale: player.scale * 0.4, alpha: 0, delay: duration / 3, duration: duration * 2 / 3 });
-        trap.sprite.once(Animations.Events.ANIMATION_COMPLETE, () => this.scene.restart(this.restartData()));
+        //  The scene clock pauses with the scene, so the wait does too
+        trap.sprite.once(Animations.Events.ANIMATION_COMPLETE, () =>
+            this.time.delayedCall(TRAPS.restartDelayMs, () => this.scene.restart(this.restartData())));
     }
 
     //  If boulder i has stopped on a trap: arms it the first time, and springs it the second. The

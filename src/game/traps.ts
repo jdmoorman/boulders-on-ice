@@ -11,6 +11,8 @@ import { GridPoint } from './levels/LevelParser';
 
 export const TRAP_FRAME_SIZE = 16;
 const TRAP_FPS = 12;
+//  Arming (the rune lighting up) plays faster than springing and closing
+const TRAP_ARM_FPS = 24;
 
 //  Loads the trap sheet. Call from the Preloader's preload().
 export function loadTraps (scene: Scene): void
@@ -34,7 +36,7 @@ export function createTrapAnimations (scene: Scene): void
     scene.anims.create({
         key: 'trap-arm',
         frames: scene.anims.generateFrameNumbers('trap', { start: 0, end: armed }),
-        frameRate: TRAP_FPS
+        frameRate: TRAP_ARM_FPS
     });
     scene.anims.create({
         key: 'trap-spring',
