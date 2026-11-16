@@ -111,7 +111,7 @@ export class EditorHud extends Scene
             { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-gear' }], () => this.openOptions(), icon) },
             { width: widePanelWidth(this, 140), add: x => addButton(this, x, top, 'Import', () => this.editor.importLevel(), { width: 140 }) },
             { width: widePanelWidth(this, 140), add: x => addButton(this, x, top, 'Export', () => this.editor.exportLevel(), { width: 140 }) },
-            { width: widePanelWidth(this, 116), add: x => addButton(this, x, top, 'Play', () => this.editor.play(), { width: 116 }) }
+            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-play' }], () => this.editor.play(), icon) }
         ];
         const gap = (width - items.reduce((sum, item) => sum + item.width, 0)) / (items.length + 1);
         let left = gap;
