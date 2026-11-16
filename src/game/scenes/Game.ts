@@ -135,7 +135,7 @@ export class Game extends Scene
         }
     }
 
-    //  Goes back to the position before the last move or restart (Z and the HUD's undo button).
+    //  Goes back to the position before the last move or restart (Z or U, and the HUD's undo button).
     //  Not once the level is complete, while a trap springs, or while something moves.
     undo ()
     {
@@ -288,14 +288,16 @@ export class Game extends Scene
                     this.restartLevel();
                 }
             });
-            //  Z undoes, with or without Ctrl or Cmd
-            keyboard.on('keydown-Z', (event: KeyboardEvent) =>
+            //  Z or U undoes, with or without Ctrl or Cmd
+            const undoKey = (event: KeyboardEvent) =>
             {
                 if (!event.altKey && !event.shiftKey)
                 {
                     this.undo();
                 }
-            });
+            };
+            keyboard.on('keydown-Z', undoKey);
+            keyboard.on('keydown-U', undoKey);
             //  Dev mode: N finishes the level on the spot (not with a modifier, like R)
             keyboard.on('keydown-N', (event: KeyboardEvent) =>
             {

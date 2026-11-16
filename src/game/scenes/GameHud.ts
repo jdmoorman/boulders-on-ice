@@ -29,7 +29,7 @@ export class GameHud extends Scene
         };
 
         //  Top left, in a row: leave (like Esc, back to the screen the level was started from; a
-        //  pencil when that's the editor), Settings, restart (like R), undo (like Z), and in dev mode, outside
+        //  pencil when that's the editor), Settings, restart (like R), undo (like Z or U), and in dev mode, outside
         //  playtests, copy the level into the editor
         const buttons: [string, () => void][] = [
             [game.levelText ? 'icon-pencil' : 'icon-home', () => game.goBack()],
