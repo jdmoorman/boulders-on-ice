@@ -4,7 +4,7 @@ import { addButton, addIconButton, buttonLabel, buttonPanel, ICON_INSET, TEXT_ST
 import { levelThumbnail } from '../levels/thumbnail';
 import { isCompleted, isUnlocked } from '../progress';
 import { checkPack, importPack, removePack } from '../levels/importedPacks';
-import { LevelParseError } from '../levels/LevelParser';
+import { LevelParseError, stripNonLevelLines } from '../levels/LevelParser';
 import type { GameData } from './Game';
 
 //  Pack list
@@ -271,7 +271,7 @@ export class LevelSelect extends Scene
     {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.txt,text/plain';
+        input.accept = '.txt,.sok,text/plain';
         input.addEventListener('change', () =>
         {
             const file = input.files?.[0];
@@ -283,7 +283,7 @@ export class LevelSelect extends Scene
         input.click();
     }
 
-    //  Checks the file's levels, asks what to call the pack (suggesting the file's name), adds it,
+    //  Strips any text that isn't level rows, checks the file's levels, asks what to call the pack (suggesting the file's name), adds it,
     //  then opens it
     private async importFile (file: File)
     {
@@ -296,7 +296,7 @@ export class LevelSelect extends Scene
         let text: string;
         try
         {
-            text = await file.text();
+            text = stripNonLevelLines(await file.text());
         }
         catch
         {
@@ -312,7 +312,7 @@ export class LevelSelect extends Scene
         {
             //  Check first, so a file that can't be played doesn't get as far as asking for a name
             checkPack(text);
-            const name = this.askPackName(file.name.replace(/\.txt$/i, ''));
+            const name = this.askPackName(file.name.replace(/\.(txt|sok)$/i, ''));
             if (name === null)
             {
                 return;

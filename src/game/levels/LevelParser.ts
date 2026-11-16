@@ -69,6 +69,21 @@ export function splitLevels (text: string): string[]
     return levels;
 }
 
+//  Strips everything but level rows from a file that mixes levels with other text, such as a
+//  Sokoban collection's titles, authors and notes. Trailing spaces are removed first, so a line
+//  of only spaces becomes empty. A level row then starts with a space or a wall and ends with a
+//  wall; any other line becomes an empty line, so it still separates the levels around it.
+export function stripNonLevelLines (text: string): string
+{
+    const isEdge = (ch: string) => ch === ' ' || ch === '#';
+    return text
+        .replace(/\r\n?/g, '\n')
+        .split('\n')
+        .map(line => line.trimEnd())
+        .map(line => line === '' || (isEdge(line[0]) && isEdge(line[line.length - 1])) ? line : '')
+        .join('\n');
+}
+
 //  Parses an ASCII level. Lines starting with ';' are comments.
 //  Rows may differ in length: the map is as wide as the longest row, and
 //  shorter rows are padded on the right with void.
