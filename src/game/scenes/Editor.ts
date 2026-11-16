@@ -151,6 +151,11 @@ export class Editor extends Scene
     //  The level as it was when the mouse was pressed; added to the undo history once the
     //  gesture changes something
     private pending: EditorSnapshot | null = null;
+    //  The level as it was when the latest press began, so a second finger can take that
+    //  press's edits back (see startPinch)
+    private pressSnapshot: EditorSnapshot | null = null;
+    //  While two fingers are down: their midpoint and how far apart they were when last seen
+    private pinch: { x: number, y: number, distance: number } | null = null;
     //  Set when the registry already holds the state to start from next time
     private skipSave = false;
     //  Saves the level to localStorage after a change (see saveEditorLevel), once changes stop
@@ -814,11 +819,20 @@ export class Editor extends Scene
     private setupInput ()
     {
         this.input.mouse?.disableContextMenu();
+        //  A second touch pointer, for two-finger panning and pinch zooming
+        this.input.addPointer(1);
+        this.pinch = null;
 
         this.input.on(Input.Events.POINTER_DOWN, (pointer: Input.Pointer) =>
         {
             if (this.inputLocked)
             {
+                return;
+            }
+            //  A second finger down: not painting after all, but panning and zooming
+            if (this.touchesDown().length >= 2)
+            {
+                this.startPinch();
                 return;
             }
             const cell = this.cellAt(pointer);
@@ -834,11 +848,17 @@ export class Editor extends Scene
             }
             this.stroke = DRAG_TOOLS.has(tool) ? { tool, last: cell } : null;
             this.pending = this.state.level.snapshot();
+            this.pressSnapshot = this.pending;
             this.applyAt(tool, cell.x, cell.y);
         });
 
         this.input.on(Input.Events.POINTER_MOVE, (pointer: Input.Pointer) =>
         {
+            if (this.pinch)
+            {
+                this.movePinch();
+                return;
+            }
             const cell = this.cellAt(pointer);
             this.updateHover(cell);
 
@@ -853,7 +873,15 @@ export class Editor extends Scene
             }
         });
 
-        const endStroke = () => { this.stroke = null; };
+        const endStroke = () =>
+        {
+            this.stroke = null;
+            //  The pinch ends when a finger lifts; the other doesn't start painting
+            if (this.touchesDown().length < 2)
+            {
+                this.pinch = null;
+            }
+        };
         this.input.on(Input.Events.POINTER_UP, endStroke);
         this.input.on(Input.Events.POINTER_UP_OUTSIDE, endStroke);
         this.input.on(Input.Events.GAME_OUT, () =>
@@ -873,7 +901,7 @@ export class Editor extends Scene
                 const event = pointer.event as WheelEvent;
                 if (event.ctrlKey || event.metaKey)
                 {
-                    this.zoomAt(pointer, dy);
+                    this.zoomAt(pointer.x, pointer.y, this.cameras.main.zoom * Math.exp(-dy * 0.01));
                 }
                 else
                 {
@@ -932,23 +960,79 @@ export class Editor extends Scene
         }
     }
 
-    //  Zooms in or out, keeping the world point under the cursor in place.
-    //  Trackpad pinches arrive as wheel events with ctrlKey set.
-    private zoomAt (pointer: Input.Pointer, dy: number)
+    //  Zooms to `zoom` (kept within MIN_ZOOM and MAX_ZOOM), keeping the world point at screen
+    //  point (x, y) in place. Trackpad pinches arrive as wheel events with ctrlKey set.
+    private zoomAt (x: number, y: number, zoom: number)
     {
         const camera = this.cameras.main;
-        const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, camera.zoom * Math.exp(-dy * 0.01)));
+        zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
 
         //  A camera maps world to screen around its centre:
         //  screen = (world - scroll - half) * zoom + half
         const halfW = camera.width / 2;
         const halfH = camera.height / 2;
-        const worldX = (pointer.x - halfW) / camera.zoom + camera.scrollX + halfW;
-        const worldY = (pointer.y - halfH) / camera.zoom + camera.scrollY + halfH;
+        const worldX = (x - halfW) / camera.zoom + camera.scrollX + halfW;
+        const worldY = (y - halfH) / camera.zoom + camera.scrollY + halfH;
 
         camera.setZoom(zoom);
-        camera.scrollX = worldX - halfW - (pointer.x - halfW) / zoom;
-        camera.scrollY = worldY - halfH - (pointer.y - halfH) / zoom;
+        camera.scrollX = worldX - halfW - (x - halfW) / zoom;
+        camera.scrollY = worldY - halfH - (y - halfH) / zoom;
+    }
+
+    //  The touch pointers currently down
+    private touchesDown (): Input.Pointer[]
+    {
+        return [this.input.pointer1, this.input.pointer2].filter(p => p?.isDown);
+    }
+
+    //  Two fingers are down: the stroke the first one started is taken back (with its edits),
+    //  and they pan and zoom the map from here on (see movePinch)
+    private startPinch ()
+    {
+        //  If the press changed something, the level as it was before it is the latest undo
+        //  snapshot: go back to that
+        const { undo } = this.state;
+        if (this.pressSnapshot && undo[undo.length - 1] === this.pressSnapshot)
+        {
+            undo.pop();
+            this.redrawCells(this.state.level.restore(this.pressSnapshot));
+            this.saveSoon();
+        }
+        this.stroke = null;
+        this.pending = null;
+        this.pressSnapshot = null;
+        this.pinch = this.pinchShape();
+    }
+
+    //  Pans the map with the fingers' midpoint and zooms it by how far apart they've moved,
+    //  around the midpoint
+    private movePinch ()
+    {
+        const before = this.pinch;
+        const now = this.pinchShape();
+        if (!before || !now)
+        {
+            return;
+        }
+        const camera = this.cameras.main;
+        camera.scrollX -= (now.x - before.x) / camera.zoom;
+        camera.scrollY -= (now.y - before.y) / camera.zoom;
+        if (before.distance > 0)
+        {
+            this.zoomAt(now.x, now.y, camera.zoom * now.distance / before.distance);
+        }
+        this.pinch = now;
+    }
+
+    //  The midpoint of the two fingers down, and how far apart they are, or null if two aren't down
+    private pinchShape (): { x: number, y: number, distance: number } | null
+    {
+        const [a, b] = this.touchesDown();
+        if (!a || !b)
+        {
+            return null;
+        }
+        return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, distance: Math.hypot(a.x - b.x, a.y - b.y) };
     }
 
     private updateHover (cell: GridPoint)

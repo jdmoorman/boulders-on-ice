@@ -24,6 +24,8 @@ import { setDoorOpen } from '../doors';
 const DIRECTIONS: readonly Direction[] = ['up', 'down', 'left', 'right'];
 //  Dev mode's solution route: over everything in the level
 const ROUTE_DEPTH = 1e7;
+//  How far (in screen pixels) a finger has to move for a swipe to count
+const SWIPE_DISTANCE = 24;
 
 export interface GameData
 {
@@ -132,6 +134,8 @@ export class Game extends Scene
     private devNote: GameObjects.Text;
     private hintReady = false;
     private hintKey: Input.Keyboard.Key | null = null;
+    //  The direction of a swipe whose finger is still down (see addSwipeControls)
+    private swipeDirection: Direction | null = null;
 
     constructor ()
     {
@@ -459,6 +463,8 @@ export class Game extends Scene
         this.solver = null;
         this.hintReady = false;
         this.hintKey = null;
+        this.swipeDirection = null;
+        this.addSwipeControls();
         this.events.once(Scenes.Events.SHUTDOWN, () =>
         {
             //  Only the search: the route and note are already destroyed with the scene, and
@@ -632,13 +638,55 @@ export class Game extends Scene
         }
     }
 
+    //  The direction the player is being told to move: an arrow (or WASD) key held down, or else
+    //  a swipe whose finger is still down
     private heldDirection (): Direction | null
     {
-        if (!this.directionKeys)
+        const key = this.directionKeys
+            ? DIRECTIONS.find(dir => this.directionKeys![dir].some(key => key.isDown)) ?? null
+            : null;
+        return key ?? this.swipeDirection;
+    }
+
+    //  Touch (or mouse) controls: swiping across the level moves the player that way, and keeping
+    //  the finger down keeps them going, like holding an arrow key. Lifting it stops them. A
+    //  swipe can turn without lifting: once the finger has moved SWIPE_DISTANCE from where the
+    //  last direction was picked, the way it went most is the new direction.
+    private addSwipeControls ()
+    {
+        let anchor: { x: number, y: number } | null = null;
+        this.input.on(Input.Events.POINTER_DOWN, (pointer: Input.Pointer) =>
         {
-            return null;
-        }
-        return DIRECTIONS.find(dir => this.directionKeys![dir].some(key => key.isDown)) ?? null;
+            //  Not a press on one of the HUD's buttons, which sit over the level
+            const hud = this.scene.get('GameHud');
+            if (hud.sys.isActive() && hud.input.hitTestPointer(pointer).length > 0)
+            {
+                return;
+            }
+            anchor = { x: pointer.x, y: pointer.y };
+        });
+        this.input.on(Input.Events.POINTER_MOVE, (pointer: Input.Pointer) =>
+        {
+            if (!anchor || !pointer.isDown)
+            {
+                return;
+            }
+            const dx = pointer.x - anchor.x;
+            const dy = pointer.y - anchor.y;
+            if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_DISTANCE)
+            {
+                return;
+            }
+            this.swipeDirection = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+            anchor = { x: pointer.x, y: pointer.y };
+        });
+        const release = () =>
+        {
+            anchor = null;
+            this.swipeDirection = null;
+        };
+        this.input.on(Input.Events.POINTER_UP, release);
+        this.input.on(Input.Events.POINTER_UP_OUTSIDE, release);
     }
 
     //  Plays the player's walk or idle animation for the current facing direction.

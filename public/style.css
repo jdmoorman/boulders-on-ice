@@ -16,8 +16,13 @@ body {
     align-items: center;
 }
 
-/*  The game fills the page; Phaser sizes its canvas to this */
+/*  The game fills the page; Phaser sizes its canvas to this. Swipes and pinches go to the game,
+    not to scrolling or zooming the page, and a long press doesn't select anything. */
 #game-container {
     width: 100%;
     height: 100%;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
 }
