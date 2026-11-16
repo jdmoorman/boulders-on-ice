@@ -11,6 +11,10 @@ export interface LevelCompleteData
     levelText?: string;
     //  The screen the level was started from, kept for the next level or a replay (see GameData)
     from?: GameOrigin;
+    //  Steps and pushes taken, and the fewest steps that solve the level (see bestSteps)
+    steps: number;
+    pushes: number;
+    best: Promise<number | null>;
 }
 
 //  Overlay shown on top of the Game scene when a level is finished.
@@ -21,6 +25,9 @@ export class LevelComplete extends Scene
     private isLast = false;
     private levelText: string | undefined;
     private from: GameOrigin | undefined;
+    private steps = 0;
+    private pushes = 0;
+    private best: Promise<number | null> = Promise.resolve(null);
 
     constructor ()
     {
@@ -33,6 +40,9 @@ export class LevelComplete extends Scene
         this.isLast = data.isLast;
         this.levelText = data.levelText;
         this.from = data.from;
+        this.steps = data.steps;
+        this.pushes = data.pushes;
+        this.best = data.best;
     }
 
     create ()
@@ -47,22 +57,49 @@ export class LevelComplete extends Scene
         this.add.rectangle(cx, cy, 520, 280, 0x24303f)
             .setStrokeStyle(4, 0xf2c230);
 
-        this.add.text(cx, cy - 70, 'Level Complete!', { ...TEXT_STYLE, fontSize: 44 })
+        this.add.text(cx, cy - 85, 'Level Complete!', { ...TEXT_STYLE, fontSize: 44 })
             .setOrigin(0.5);
 
-        addButton(this, cx - 120, cy + 60, 'Replay', () => this.replay());
+        //  The steps taken against the fewest possible, filled in once the search has finished
+        const pushes = this.pushes === 1 ? '1 push' : `${this.pushes} pushes`;
+        this.add.text(cx, cy - 32, `${this.steps} steps, ${pushes}`, { ...TEXT_STYLE, fontSize: 24 })
+            .setOrigin(0.5);
+        const bestText = this.add.text(cx, cy + 2, 'Fewest possible: …', { ...TEXT_STYLE, fontSize: 24 })
+            .setOrigin(0.5);
+        this.best.then(best =>
+        {
+            //  The popup may have closed while waiting
+            if (!bestText.active)
+            {
+                return;
+            }
+            if (best === null)
+            {
+                bestText.setText('Fewest possible: unknown');
+            }
+            else if (this.steps <= best)
+            {
+                bestText.setText(`Fewest possible: ${best}. Perfect!`);
+            }
+            else
+            {
+                bestText.setText(`Fewest possible: ${best}`);
+            }
+        });
+
+        addButton(this, cx - 120, cy + 75, 'Replay', () => this.replay());
 
         if (this.levelText)
         {
-            addButton(this, cx + 120, cy + 60, 'Editor', () => this.toEditor());
+            addButton(this, cx + 120, cy + 75, 'Editor', () => this.toEditor());
         }
         else if (this.isLast)
         {
-            addButton(this, cx + 120, cy + 60, 'Menu', () => this.toMenu());
+            addButton(this, cx + 120, cy + 75, 'Menu', () => this.toMenu());
         }
         else
         {
-            addButton(this, cx + 120, cy + 60, 'Next', () => this.next());
+            addButton(this, cx + 120, cy + 75, 'Next', () => this.next());
         }
 
         const keyboard = this.input.keyboard;

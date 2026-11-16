@@ -14,6 +14,7 @@ import { TEXT_STYLE } from '../ui/Button';
 import { HUD_BUTTON_SIZE, HUD_MARGIN } from './GameHud';
 import { copyLevelToEditor, editorHasLevel } from './Editor';
 import { PathSegment, replayMoves } from '../movement/replay';
+import { bestSteps } from '../bestSteps';
 import { drawRoute } from '../levels/routeDrawing';
 import type { AnalysisMessage, AnalysisRequest } from '../editor/analysisShared';
 import { playerAnimKey, PlayerAnimKind } from '../playerAnimations';
@@ -55,6 +56,9 @@ export function leaveGame (scene: Scene, target: GameOrigin, data?: object): voi
     scene.scene.start(target, data);
 }
 
+//  Emitted on the Game scene's events when the step or push count changes
+export const COUNTS_CHANGED = 'counts-changed';
+
 export class Game extends Scene
 {
     levelIndex = 0;
@@ -71,6 +75,12 @@ export class Game extends Scene
     springing = false;
     //  Direction the player sprite faces; levels start facing down
     facing: Direction = 'down';
+    //  Moves made so far: every arrow-key press that moved the player or pushed a boulder, and
+    //  the pushes among them. The HUD shows them; COUNTS_CHANGED is emitted when they change.
+    steps = 0;
+    pushes = 0;
+    //  The fewest steps that solve the level from its start (see bestSteps)
+    private best: Promise<number | null>;
 
     private directionKeys: Record<Direction, Input.Keyboard.Key[]> | null = null;
     //  Direction whose blocked move was already reported, so a held key reports it once
@@ -166,8 +176,12 @@ export class Game extends Scene
         this.cameras.main.setBackgroundColor(0x141a22);
 
         //  level.data.boulders holds live boulder positions, in the same order as level.boulders sprites
-        const data = parseLevel(this.levelText ?? levelText(this, LEVELS[this.levelIndex]));
+        const text = this.levelText ?? levelText(this, LEVELS[this.levelIndex]);
+        const data = parseLevel(text);
+        this.best = bestSteps(text);
         this.facing = 'down';
+        this.steps = 0;
+        this.pushes = 0;
         const saved = this.resume ? loadLevelInProgress() : null;
         let armedTraps = startArmedTraps(data);
         if (saved && !this.levelText && saved.levelKey === LEVELS[this.levelIndex].key && fitsLevel(saved, data))
@@ -176,6 +190,8 @@ export class Game extends Scene
             data.boulders = saved.boulders;
             this.facing = saved.facing;
             armedTraps = saved.armedTraps ?? startArmedTraps(data);
+            this.steps = saved.steps ?? 0;
+            this.pushes = saved.pushes ?? 0;
         }
         this.level = buildLevel(this, data, armedTraps);
         this.playerPos = { ...data.player };
@@ -282,6 +298,15 @@ export class Game extends Scene
 
         const move = resolveMove(this.level.data, this.playerPos, dir, this.trapsArmed());
         this.facing = dir;
+        if (move.kind !== 'blocked')
+        {
+            this.steps++;
+            if (move.kind === 'push')
+            {
+                this.pushes++;
+            }
+            this.events.emit(COUNTS_CHANGED);
+        }
         switch (move.kind)
         {
             case 'walk':
@@ -626,7 +651,9 @@ export class Game extends Scene
             player: { ...this.playerPos },
             boulders: this.level.data.boulders.map(b => ({ ...b })),
             facing: this.facing,
-            armedTraps: this.level.traps.flatMap((t, i) => t.armed ? [i] : [])
+            armedTraps: this.level.traps.flatMap((t, i) => t.armed ? [i] : []),
+            steps: this.steps,
+            pushes: this.pushes
         });
     }
 
@@ -642,7 +669,10 @@ export class Game extends Scene
             levelIndex: this.levelIndex,
             isLast: isLastInPack(this.levelIndex),
             levelText: this.levelText ?? undefined,
-            from: this.from
+            from: this.from,
+            steps: this.steps,
+            pushes: this.pushes,
+            best: this.best
         };
         this.scene.launch('LevelComplete', data);
     }
