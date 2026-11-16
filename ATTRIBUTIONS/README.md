@@ -8,6 +8,10 @@
 - [firefox.png](../public/assets/player/firefox.png) made by Guillaume Lecollinet for the game [BrowserQuest](https://github.com/browserquest/BrowserQuest). Licensed under [CC-BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
 - [public/assets/player/openmon/*](../public/assets/player/openmon) part of the [Openmon Asset Collection](https://itch.io/c/4240964/openmon-assets). Licensed under [CC0](https://creativecommons.org/public-domain/#cc0).
 
+### Font
+
+- [PixelifySans.ttf](../public/assets/fonts/PixelifySans.ttf), [Pixelify Sans](https://github.com/eifetx/Pixelify-Sans) by Stefie Justprince. Licensed under the [SIL Open Font License 1.1](../public/assets/fonts/OFL.txt).
+
 ### Levels
 
 - All levels were designed by [Jacob Moorman](https://github.com/jdmoorman).

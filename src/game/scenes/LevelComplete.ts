@@ -47,7 +47,7 @@ export class LevelComplete extends Scene
         this.add.rectangle(cx, cy, 520, 280, 0x24303f)
             .setStrokeStyle(4, 0xf2c230);
 
-        this.add.text(cx, cy - 70, 'Level Complete!', { ...TEXT_STYLE, fontSize: 44 })
+        this.add.text(cx, cy - 70, 'Level Complete!', { ...TEXT_STYLE, fontSize: 56 })
             .setOrigin(0.5);
 
         addButton(this, cx - 120, cy + 60, 'Replay', () => this.replay());

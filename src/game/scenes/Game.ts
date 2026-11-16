@@ -246,7 +246,7 @@ export class Game extends Scene
 
         this.routeGraphics = this.add.graphics().setDepth(ROUTE_DEPTH).setVisible(false);
         //  Under the HUD's buttons
-        this.devNote = this.add.text(HUD_MARGIN, HUD_MARGIN * 1.5 + HUD_BUTTON_SIZE, '', { ...TEXT_STYLE, fontSize: 20, strokeThickness: 5 })
+        this.devNote = this.add.text(HUD_MARGIN, HUD_MARGIN * 1.5 + HUD_BUTTON_SIZE, '', { ...TEXT_STYLE, fontSize: 24, strokeThickness: 5 })
             .setScrollFactor(0)
             .setDepth(ROUTE_DEPTH)
             .setVisible(false);

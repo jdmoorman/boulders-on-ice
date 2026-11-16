@@ -24,10 +24,10 @@ export class MainMenu extends Scene
     {
         this.comingSoonText = null;
         //  Same title style and position as Level Select
-        this.add.text(512, 90, 'Main Menu', { ...TEXT_STYLE, fontSize: 48, strokeThickness: 8 }).setOrigin(0.5);
+        this.add.text(512, 90, 'Main Menu', { ...TEXT_STYLE, fontSize: 60, strokeThickness: 8 }).setOrigin(0.5);
 
         //  Wide enough for "Achievements"
-        const size = { width: 260 };
+        const size = { width: 300 };
         //  Play picks the level in progress back up where it was left, or else starts the
         //  earliest level not yet completed. Pass the data in full: Phaser reuses a scene's
         //  previous start data otherwise
@@ -44,7 +44,7 @@ export class MainMenu extends Scene
     private comingSoon (name: string)
     {
         this.comingSoonText?.destroy();
-        const text = this.add.text(512, 710, `${name} isn't done yet.`, { ...TEXT_STYLE, fontSize: 22, strokeThickness: 5 })
+        const text = this.add.text(512, 710, `${name} isn't done yet.`, { ...TEXT_STYLE, fontSize: 28, strokeThickness: 5 })
             .setOrigin(0.5);
         this.comingSoonText = text;
         this.tweens.add({ targets: text, alpha: 0, delay: 1200, duration: 400, onComplete: () => text.destroy() });
@@ -64,7 +64,7 @@ export class MainMenu extends Scene
             CHECKBOX_SIZE - 12, CHECKBOX_SIZE - 12, CHECK_COLOR)
             .setVisible(gameSettings().devMode);
         const label = this.add.text(x + CHECKBOX_SIZE + 12, y + CHECKBOX_SIZE / 2, 'Dev mode',
-            { ...TEXT_STYLE, fontSize: 20, strokeThickness: 5 })
+            { ...TEXT_STYLE, fontSize: 24, strokeThickness: 5 })
             .setOrigin(0, 0.5)
             .setInteractive({ useHandCursor: true });
         const toggle = () =>

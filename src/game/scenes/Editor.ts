@@ -742,7 +742,7 @@ export class Editor extends Scene
             //  In the tile's top-left corner, clear of the route lines through its centre
             const x = tile.x * TILE_SIZE + 6;
             const y = tile.y * TILE_SIZE + 4;
-            this.analysisOverlay.add(this.add.text(x, y, `${tile.cost}`, { ...TEXT_STYLE, fontSize: 16, strokeThickness: 4 }));
+            this.analysisOverlay.add(this.add.text(x, y, `${tile.cost}`, { ...TEXT_STYLE, fontSize: 20, strokeThickness: 4 }));
         }
 
         //  Once the search is known to be complete, dim the ground it never reached

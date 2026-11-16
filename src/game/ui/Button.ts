@@ -4,8 +4,11 @@ import { Scene, GameObjects } from 'phaser';
 export const UI_LIGHT = 0xc7cfcc;
 export const UI_LIGHT_CSS = '#c7cfcc';
 
+//  A pixel font, loaded in the Preloader
+export const FONT_FAMILY = 'Pixelify Sans';
+
 export const TEXT_STYLE = {
-    fontFamily: 'Arial Black', color: UI_LIGHT_CSS,
+    fontFamily: `'${FONT_FAMILY}'`, color: UI_LIGHT_CSS,
     stroke: '#000000', strokeThickness: 6,
     align: 'center'
 };
@@ -125,7 +128,7 @@ export function addButton (
     const button = scene.add.rectangle(x, y, panel.width, panel.height, FILL, 0)
         .setInteractive({ useHandCursor: true });
 
-    const text = scene.add.text(x, y, label, { ...TEXT_STYLE, fontSize: 28 }).setOrigin(0.5);
+    const text = scene.add.text(x, y, label, { ...TEXT_STYLE, fontSize: 36 }).setOrigin(0.5);
     //  Destroying the button takes its label and panel with it
     button.once(GameObjects.Events.DESTROY, () =>
     {

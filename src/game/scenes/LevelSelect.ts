@@ -91,7 +91,7 @@ export class LevelSelect extends Scene
     {
         const { width, height } = this.scale;
         const cx = width / 2;
-        this.add.text(cx, 90, 'Select Level Pack', { ...TEXT_STYLE, fontSize: 48, strokeThickness: 8 }).setOrigin(0.5);
+        this.add.text(cx, 90, 'Select Level Pack', { ...TEXT_STYLE, fontSize: 60, strokeThickness: 8 }).setOrigin(0.5);
 
         LEVEL_PACKS.forEach((pack, i) =>
         {
@@ -102,7 +102,7 @@ export class LevelSelect extends Scene
             const done = pack.levels.filter(level => isCompleted(level.key)).length;
             const all = done === pack.levels.length;
             this.add.text(cx + PACK_W / 2 - 24, y, `${all ? '✓ ' : ''}${done} / ${pack.levels.length}`,
-                { ...TEXT_STYLE, fontSize: 24, color: all ? '#9fe08a' : UI_LIGHT_CSS })
+                { ...TEXT_STYLE, fontSize: 30, color: all ? '#9fe08a' : UI_LIGHT_CSS })
                 .setOrigin(1, 0.5);
             if (pack.imported)
             {
@@ -135,7 +135,7 @@ export class LevelSelect extends Scene
         const button = this.add.rectangle(x, y, REMOVE_SIZE, REMOVE_SIZE, REMOVE_FILL)
             .setStrokeStyle(3, 0x000000)
             .setInteractive({ useHandCursor: true });
-        this.add.text(x, y, '✕', { ...TEXT_STYLE, fontSize: 30 }).setOrigin(0.5);
+        this.add.text(x, y, '✕', { ...TEXT_STYLE, fontSize: 38 }).setOrigin(0.5);
         button.on('pointerover', () => button.setFillStyle(REMOVE_FILL_HOVER));
         button.on('pointerout', () => button.setFillStyle(REMOVE_FILL));
         button.on('pointerup', () =>
@@ -166,7 +166,7 @@ export class LevelSelect extends Scene
             }
         };
 
-        this.add.text(cx, 60, pack.name, { ...TEXT_STYLE, fontSize: 44, strokeThickness: 8 }).setOrigin(0.5);
+        this.add.text(cx, 60, pack.name, { ...TEXT_STYLE, fontSize: 56, strokeThickness: 8 }).setOrigin(0.5);
 
         const first = current * LEVELS_PER_PAGE;
         const onPage = pack.levels.slice(first, first + LEVELS_PER_PAGE);
@@ -189,7 +189,7 @@ export class LevelSelect extends Scene
                 { width: CELL_W, height: CELL_H });
             //  Level number in the corner, over the thumbnail
             this.add.text(x - CELL_W / 2 + 6, y - CELL_H / 2 + 2, String(first + i + 1),
-                { ...TEXT_STYLE, fontSize: 18, strokeThickness: 4 });
+                { ...TEXT_STYLE, fontSize: 22, strokeThickness: 4 });
 
             //  Locked until the previous level in the pack is completed: dimmed, with a padlock
             if (!isUnlocked(levelIndex))
@@ -251,7 +251,7 @@ export class LevelSelect extends Scene
             }
             else
             {
-                objects.push(this.add.text(x, y, label, { ...TEXT_STYLE, fontSize: 28 }).setOrigin(0.5));
+                objects.push(this.add.text(x, y, label, { ...TEXT_STYLE, fontSize: 36 }).setOrigin(0.5));
             }
             for (const object of objects as (GameObjects.GameObject & GameObjects.Components.ScrollFactor & GameObjects.Components.Depth)[])
             {
@@ -259,7 +259,7 @@ export class LevelSelect extends Scene
             }
         });
 
-        this.messageText = this.add.text(cx, height - BAR_HEIGHT - 4, '', { ...TEXT_STYLE, fontSize: 20 })
+        this.messageText = this.add.text(cx, height - BAR_HEIGHT - 4, '', { ...TEXT_STYLE, fontSize: 24 })
             .setOrigin(0.5, 1)
             .setWordWrapWidth(width - 40)
             .setScrollFactor(0)

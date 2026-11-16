@@ -37,13 +37,13 @@ export class SettingsPopup extends Scene
             .setOrigin(0)
             .setStrokeStyle(4, 0x9fd0f0)
             .setInteractive();
-        this.add.text(width / 2, top + 40, 'Settings', { ...TEXT_STYLE, fontSize: 32 })
+        this.add.text(width / 2, top + 40, 'Settings', { ...TEXT_STYLE, fontSize: 40 })
             .setOrigin(0.5);
 
         if (SETTINGS.length === 0)
         {
             this.add.text(width / 2, top + 90 + SETTING_ROW_HEIGHT / 2 - 18, 'No settings yet.',
-                { ...TEXT_STYLE, fontSize: 22, strokeThickness: 5 })
+                { ...TEXT_STYLE, fontSize: 28, strokeThickness: 5 })
                 .setOrigin(0.5);
         }
         SETTINGS.forEach(({ key, label, description }, i) =>
@@ -63,12 +63,12 @@ export class SettingsPopup extends Scene
             };
             box.on('pointerup', toggle);
             const textX = left + 32 + CHECKBOX_SIZE + 20;
-            this.add.text(textX, y + CHECKBOX_SIZE / 2, label, { ...TEXT_STYLE, fontSize: 24, strokeThickness: 5 })
+            this.add.text(textX, y + CHECKBOX_SIZE / 2, label, { ...TEXT_STYLE, fontSize: 30, strokeThickness: 5 })
                 .setOrigin(0, 0.5)
                 .setInteractive({ useHandCursor: true })
                 .on('pointerup', toggle);
             this.add.text(textX, y + CHECKBOX_SIZE + 8, description,
-                { ...TEXT_STYLE, fontSize: 16, strokeThickness: 4, align: 'left' });
+                { ...TEXT_STYLE, fontSize: 20, strokeThickness: 4, align: 'left' });
         });
 
         addButton(this, width / 2, top + panelHeight - 44, 'Close', () => this.close(),

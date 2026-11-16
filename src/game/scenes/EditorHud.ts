@@ -128,7 +128,7 @@ export class EditorHud extends Scene
 
             //  The tool's shortcut key, in the button's top-left corner
             const half = PALETTE_BUTTON_SIZE / 2;
-            this.add.text(x - half + 6, y - half + 4, `${i + 1}`, { ...TEXT_STYLE, fontSize: 16, strokeThickness: 4 });
+            this.add.text(x - half + 6, y - half + 4, `${i + 1}`, { ...TEXT_STYLE, fontSize: 20, strokeThickness: 4 });
         });
         this.highlightTool(this.editor.tool);
 
@@ -138,10 +138,10 @@ export class EditorHud extends Scene
             .setOrigin(0)
             .setStrokeStyle(2, 0x000000);
         this.progressFill = this.add.rectangle(16, progressY, PROGRESS_WIDTH, 12, SELECTED_STROKE).setOrigin(0);
-        this.progressText = this.add.text(16 + PROGRESS_WIDTH + 12, progressY + 6, '', { ...TEXT_STYLE, fontSize: 16, strokeThickness: 4 })
+        this.progressText = this.add.text(16 + PROGRESS_WIDTH + 12, progressY + 6, '', { ...TEXT_STYLE, fontSize: 20, strokeThickness: 4 })
             .setOrigin(0, 0.5);
 
-        this.messageText = this.add.text(width / 2, barHeight + 52, '', { ...TEXT_STYLE, fontSize: 24, strokeThickness: 5 })
+        this.messageText = this.add.text(width / 2, barHeight + 52, '', { ...TEXT_STYLE, fontSize: 30, strokeThickness: 5 })
             .setOrigin(0.5);
 
         const onTool = (tool: EditorTool) => this.highlightTool(tool);
@@ -200,7 +200,7 @@ export class EditorHud extends Scene
             .setOrigin(0)
             .setStrokeStyle(3, 0x000000)
             .setInteractive());
-        objects.push(this.add.text(width / 2, top + 40, 'Editor Options', { ...TEXT_STYLE, fontSize: 32 })
+        objects.push(this.add.text(width / 2, top + 40, 'Editor Options', { ...TEXT_STYLE, fontSize: 40 })
             .setOrigin(0.5));
 
         const updates = OPTIONS.map(({ key, label, description }, i) =>
@@ -216,12 +216,12 @@ export class EditorHud extends Scene
             const check = this.add.rectangle(left + 32 + CHECKBOX_SIZE / 2, y + CHECKBOX_SIZE / 2,
                 CHECKBOX_SIZE - 14, CHECKBOX_SIZE - 14, SELECTED_STROKE);
             const textX = left + 32 + CHECKBOX_SIZE + 20;
-            const title = this.add.text(textX, y + CHECKBOX_SIZE / 2, label, { ...TEXT_STYLE, fontSize: 24, strokeThickness: 5 })
+            const title = this.add.text(textX, y + CHECKBOX_SIZE / 2, label, { ...TEXT_STYLE, fontSize: 30, strokeThickness: 5 })
                 .setOrigin(0, 0.5)
                 .setInteractive({ useHandCursor: true })
                 .on('pointerup', toggle);
             const note = this.add.text(textX, y + CHECKBOX_SIZE + 8, description,
-                { ...TEXT_STYLE, fontSize: 16, strokeThickness: 4, align: 'left' });
+                { ...TEXT_STYLE, fontSize: 20, strokeThickness: 4, align: 'left' });
             objects.push(box, check, title, note);
 
             return () => check.setVisible(this.editor.editorSettings[key]);

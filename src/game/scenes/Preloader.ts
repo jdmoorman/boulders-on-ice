@@ -1,7 +1,7 @@
 import { Scene, Textures } from 'phaser';
 import { createPlayerAnimations, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT } from '../playerAnimations';
 import { generateTextures } from '../textures';
-import { UI_LIGHT } from '../ui/Button';
+import { FONT_FAMILY, UI_LIGHT } from '../ui/Button';
 import { LEVELS } from '../levels/levelList';
 import { loadImportedPacks } from '../levels/importedPacks';
 import { createPlateAnimations, loadPlates } from '../plates';
@@ -36,6 +36,9 @@ export class Preloader extends Scene
     {
         //  Load the assets for the game - Replace with your own assets
         this.load.setPath('assets');
+
+        //  The font every text uses (see TEXT_STYLE)
+        this.load.font(FONT_FAMILY, 'fonts/PixelifySans.ttf');
 
         this.load.spritesheet('player', 'player/openmon/set1-sheet3.png', {
             frameWidth: PLAYER_FRAME_WIDTH,
