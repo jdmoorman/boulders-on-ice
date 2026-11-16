@@ -14,7 +14,6 @@ import { TEXT_STYLE } from '../ui/Button';
 import { HUD_BUTTON_SIZE, HUD_MARGIN } from './GameHud';
 import { copyLevelToEditor, editorHasLevel } from './Editor';
 import { PathSegment, replayMoves } from '../movement/replay';
-import { bestSteps } from '../bestSteps';
 import { drawRoute } from '../levels/routeDrawing';
 import type { AnalysisMessage, AnalysisRequest } from '../editor/analysisShared';
 import { playerAnimKey, PlayerAnimKind } from '../playerAnimations';
@@ -50,7 +49,6 @@ export interface GameSnapshot
     facing: Direction;
     //  Indices into the level's traps
     armedTraps: number[];
-    steps: number;
 }
 
 //  Screens a level can be started from
@@ -87,11 +85,6 @@ export class Game extends Scene
     springing = false;
     //  Direction the player sprite faces; levels start facing down
     facing: Direction = 'down';
-    //  Moves made so far: every arrow-key press that moved the player or pushed a boulder, shown
-    //  when the level is complete
-    steps = 0;
-    //  The fewest steps that solve the level from its start (see bestSteps)
-    private best: Promise<number | null>;
 
     private directionKeys: Record<Direction, Input.Keyboard.Key[]> | null = null;
     //  Direction whose blocked move was already reported, so a held key reports it once
@@ -164,8 +157,7 @@ export class Game extends Scene
             player: { ...this.playerPos },
             boulders: this.level.data.boulders.map(b => ({ ...b })),
             facing: this.facing,
-            armedTraps: this.level.traps.flatMap((t, i) => t.armed ? [i] : []),
-            steps: this.steps
+            armedTraps: this.level.traps.flatMap((t, i) => t.armed ? [i] : [])
         };
     }
 
@@ -224,11 +216,8 @@ export class Game extends Scene
         this.cameras.main.setBackgroundColor(0x141a22);
 
         //  level.data.boulders holds live boulder positions, in the same order as level.boulders sprites
-        const text = this.levelText ?? levelText(this, LEVELS[this.levelIndex]);
-        const data = parseLevel(text);
-        this.best = bestSteps(text);
+        const data = parseLevel(this.levelText ?? levelText(this, LEVELS[this.levelIndex]));
         this.facing = 'down';
-        this.steps = 0;
         const saved = this.resume ? loadLevelInProgress() : null;
         let armedTraps = startArmedTraps(data);
         if (saved && !this.levelText && saved.levelKey === LEVELS[this.levelIndex].key && fitsLevel(saved, data))
@@ -237,7 +226,6 @@ export class Game extends Scene
             data.boulders = saved.boulders;
             this.facing = saved.facing;
             armedTraps = saved.armedTraps ?? startArmedTraps(data);
-            this.steps = saved.steps ?? 0;
         }
         else if (this.startState)
         {
@@ -246,7 +234,6 @@ export class Game extends Scene
             data.boulders = state.boulders.map(b => ({ ...b }));
             this.facing = state.facing;
             armedTraps = [...state.armedTraps];
-            this.steps = state.steps;
         }
         this.level = buildLevel(this, data, armedTraps);
         this.playerPos = { ...data.player };
@@ -364,7 +351,6 @@ export class Game extends Scene
         if (move.kind !== 'blocked')
         {
             this.history.push(this.snapshot());
-            this.steps++;
         }
         switch (move.kind)
         {
@@ -725,8 +711,7 @@ export class Game extends Scene
             player: { ...this.playerPos },
             boulders: this.level.data.boulders.map(b => ({ ...b })),
             facing: this.facing,
-            armedTraps: this.level.traps.flatMap((t, i) => t.armed ? [i] : []),
-            steps: this.steps
+            armedTraps: this.level.traps.flatMap((t, i) => t.armed ? [i] : [])
         });
     }
 
@@ -742,9 +727,7 @@ export class Game extends Scene
             levelIndex: this.levelIndex,
             isLast: isLastInPack(this.levelIndex),
             levelText: this.levelText ?? undefined,
-            from: this.from,
-            steps: this.steps,
-            best: this.best
+            from: this.from
         };
         this.scene.launch('LevelComplete', data);
     }

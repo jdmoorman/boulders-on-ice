@@ -17,8 +17,6 @@ export interface LevelInProgress
     facing: Direction;
     //  Indices into the level's traps of those already armed (missing in older saves)
     armedTraps?: number[];
-    //  Steps made so far (missing in older saves)
-    steps?: number;
 }
 
 export function saveLevelInProgress (state: LevelInProgress): void
@@ -54,8 +52,7 @@ export function loadLevelInProgress (): LevelInProgress | null
         if (saved && typeof saved.levelKey === 'string' && isPoint(saved.player) && Array.isArray(saved.boulders)
             && saved.boulders.every(isPoint) && ['up', 'down', 'left', 'right'].includes(saved.facing as string)
             && (saved.armedTraps === undefined
-                || (Array.isArray(saved.armedTraps) && saved.armedTraps.every(i => Number.isInteger(i))))
-            && (saved.steps === undefined || Number.isInteger(saved.steps)))
+                || (Array.isArray(saved.armedTraps) && saved.armedTraps.every(i => Number.isInteger(i)))))
         {
             return saved as LevelInProgress;
         }
