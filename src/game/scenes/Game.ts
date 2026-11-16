@@ -404,17 +404,14 @@ export class Game extends Scene
         this.springing = true;
         this.playPlayerAnim('idle');
         trap.sprite.play('trap-spring');
-        const player = this.level.player;
-        const duration = trap.sprite.anims.duration;
-        //  The player shrinks and fades as they fall into the opening pit
-        this.tweens.add({ targets: player, scale: player.scale * 0.4, alpha: 0, delay: duration / 3, duration: duration * 2 / 3 });
+        this.fallIntoPit(this.level.player, trap);
         //  The scene clock pauses with the scene, so the wait does too
         trap.sprite.once(Animations.Events.ANIMATION_COMPLETE, () =>
             this.time.delayedCall(TRAPS.restartDelayMs, () => this.scene.restart(this.restartData())));
     }
 
     //  If boulder i has stopped on a trap: arms it the first time, and springs it the second. The
-    //  boulder is removed (no fall animation yet), and once the trap has opened it closes again,
+    //  boulder falls into the pit as the player does, and once the trap has opened it closes again,
     //  unarmed. Play carries on while it closes; anything stopping on it then arms it as usual.
     private boulderOnTrap (i: number)
     {
@@ -435,18 +432,34 @@ export class Game extends Scene
         //  The trap is unarmed from now on (so the doors close), though it's drawn closing after
         //  it has opened
         trap.armed = false;
-        this.level.boulders[i].destroy();
+        const boulder = this.level.boulders[i];
         this.level.boulders.splice(i, 1);
         this.level.data.boulders.splice(i, 1);
         this.updatePlates();
 
         this.springing = true;
         trap.sprite.play('trap-spring');
+        this.fallIntoPit(boulder, trap, () => boulder.destroy());
         trap.sprite.once(Animations.Events.ANIMATION_COMPLETE, () =>
         {
             trap.sprite.play('trap-close');
             this.springing = false;
             this.saveProgress();
+        });
+    }
+
+    //  Shrinks and fades a sprite as it falls into a trap's opening pit, over the later part of
+    //  the trap's spring animation (which must have just started), then calls `onDone`
+    private fallIntoPit (sprite: GameObjects.Image | GameObjects.Sprite, trap: Trap, onDone?: () => void)
+    {
+        const duration = trap.sprite.anims.duration;
+        this.tweens.add({
+            targets: sprite,
+            scale: sprite.scale * 0.4,
+            alpha: 0,
+            delay: duration / 3,
+            duration: duration * 2 / 3,
+            onComplete: () => onDone?.()
         });
     }
 
