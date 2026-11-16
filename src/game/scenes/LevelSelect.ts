@@ -1,6 +1,6 @@
 import { Scene, Input, Time, GameObjects } from 'phaser';
 import { LEVEL_PACKS, LEVELS, LevelPack } from '../levels/levelList';
-import { addButton, addIconButton, buttonLabel, buttonPanel, ICON_INSET, TEXT_STYLE, UI_LIGHT_CSS, widePanelHeight } from '../ui/Button';
+import { addButton, addIcon, addIconButton, buttonLabel, buttonPanel, ICON_INSET, TEXT_STYLE, UI_LIGHT_CSS, widePanelHeight } from '../ui/Button';
 import { levelThumbnail } from '../levels/thumbnail';
 import { isCompleted, isUnlocked } from '../progress';
 import { checkPack, importPack, removePack } from '../levels/importedPacks';
@@ -196,7 +196,7 @@ export class LevelSelect extends Scene
             {
                 button.disableInteractive();
                 this.add.rectangle(x, y, CELL_W, CELL_H, 0x000000, 0.55);
-                this.add.image(x, y, 'icon-lock').setScale(3);
+                addIcon(this, x, y, 'icon-lock', undefined, 3);
             }
         });
 

@@ -1,7 +1,7 @@
 import { Scene, Textures } from 'phaser';
 import { createPlayerAnimations, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT } from '../playerAnimations';
 import { generateTextures } from '../textures';
-import { FONT_FAMILY, UI_LIGHT } from '../ui/Button';
+import { addIconSilhouette, FONT_FAMILY, UI_LIGHT } from '../ui/Button';
 import { LEVELS } from '../levels/levelList';
 import { loadImportedPacks } from '../levels/importedPacks';
 import { createPlateAnimations, loadPlates } from '../plates';
@@ -75,11 +75,14 @@ export class Preloader extends Scene
         //  When all the assets have loaded, it's often worth creating global objects here that the rest of the game can use.
         //  For example, you can define global animations here, so we can use them in other scenes.
         //  Keep the scaled-up pixel art sharp (only these textures; others still smooth)
+        const icons = ['icon-pencil', 'icon-home', 'icon-gear', 'icon-restart', 'icon-lock', 'icon-game-undo'];
         for (const key of ['player', 'boulder', 'goal', 'floor', 'plate-press', 'plate-unpress', 'door-open', 'door-close', 'trap',
-            'icon-pencil', 'icon-home', 'icon-gear', 'icon-restart', 'icon-lock', 'icon-game-undo', 'ui-panel', 'ui-wide-panel'])
+            ...icons, 'ui-panel', 'ui-wide-panel'])
         {
             this.textures.get(key).setFilter(Textures.FilterMode.NEAREST);
         }
+        //  Dark silhouettes the icons' outlines are drawn with (see addIcon)
+        icons.forEach(key => addIconSilhouette(this, key));
         createPlayerAnimations(this);
         createPlateAnimations(this);
         createDoorAnimations(this);

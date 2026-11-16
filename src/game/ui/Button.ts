@@ -1,4 +1,4 @@
-import { Scene, GameObjects } from 'phaser';
+import { Scene, GameObjects, Textures } from 'phaser';
 
 //  The light colour of the pixel-art icons, for text and drawings in the UI
 export const UI_LIGHT = 0xc7cfcc;
@@ -167,6 +167,45 @@ export const PANEL_SIZE = PANEL_PIXELS * PANEL_SCALE;
 //  The margin around the icon, as a fraction of the panel
 const PANEL_BORDER = (PANEL_PIXELS - PANEL_ICON_PIXELS) / 2 / PANEL_PIXELS;
 
+const silhouetteKey = (key: string) => `${key}-silhouette`;
+//  The icons' outline colour: the dark border of the panels
+const ICON_OUTLINE_CSS = '#151d28';
+
+//  Makes a dark copy of an image texture, under '<key>-silhouette', for addIcon to outline it
+//  with. Call once the image has loaded.
+export function addIconSilhouette (scene: Scene, key: string): void
+{
+    const source = scene.textures.get(key).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+    const texture = scene.textures.createCanvas(silhouetteKey(key), source.width, source.height);
+    if (!texture)
+    {
+        throw new Error(`Could not create canvas texture '${silhouetteKey(key)}'`);
+    }
+    const c = texture.context;
+    c.drawImage(source, 0, 0);
+    //  Keep the shape, in the outline colour
+    c.globalCompositeOperation = 'source-in';
+    c.fillStyle = ICON_OUTLINE_CSS;
+    c.fillRect(0, 0, source.width, source.height);
+    texture.refresh();
+    texture.setFilter(Textures.FilterMode.NEAREST);
+}
+
+//  Adds an image at a scale. An image with a silhouette (see addIconSilhouette) gets a dark
+//  outline one pixel of its art wide: the silhouette one pixel left, right, up and down, behind
+//  it. Returns every image added, the icon itself last.
+export function addIcon (
+    scene: Scene, x: number, y: number, key: string, frame: string | number | undefined, scale: number
+): GameObjects.Image[]
+{
+    const silhouette = silhouetteKey(key);
+    const outline = scene.textures.exists(silhouette)
+        ? [[-1, 0], [1, 0], [0, -1], [0, 1]].map(([dx, dy]) =>
+            scene.add.image(x + dx * scale, y + dy * scale, silhouette).setScale(scale))
+        : [];
+    return [...outline, scene.add.image(x, y, key, frame).setScale(scale)];
+}
+
 //  Adds a clickable rectangle button showing images instead of a label. The icons are drawn in
 //  order, each scaled to fit inside the button without stretching.
 export function addIconButton (
@@ -187,13 +226,13 @@ export function addIconButton (
         button.setStrokeStyle(3, 0x000000);
     }
 
-    const images = icons.map(({ key, frame, scale, offsetY = 0 }) =>
+    const images = icons.flatMap(({ key, frame, scale, offsetY = 0 }) =>
     {
-        const image = scene.add.image(x, y + offsetY, key, frame);
+        const size = scene.textures.getFrame(key, frame);
         const insetX = panel ? width * PANEL_BORDER : ICON_INSET;
         const insetY = panel ? height * PANEL_BORDER : ICON_INSET;
-        const fit = Math.min((width - insetX * 2) / image.width, (height - insetY * 2) / image.height);
-        return image.setScale(scale ?? fit);
+        const fit = Math.min((width - insetX * 2) / size.width, (height - insetY * 2) / size.height);
+        return addIcon(scene, x, y + offsetY, key, frame, scale ?? fit);
     });
     button.once(GameObjects.Events.DESTROY, () =>
     {
