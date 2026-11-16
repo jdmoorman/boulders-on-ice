@@ -29,6 +29,33 @@ const OPTIONS: readonly { key: keyof EditorSettings, label: string }[] = [
     }
 ];
 
+//  How a bar of `count` square buttons `size` wide fits across a screen `width` wide. While they
+//  fit in one row, they're centred `step` apart (at least `size`, so the gaps shrink as the
+//  screen narrows until the buttons touch). Narrower than that, they're in as few rows as fit,
+//  as evenly filled as possible and each centred, with the buttons touching, to take as little of
+//  the screen as possible. The bar keeps a small margin above and below. Gives the bar's height
+//  and each button's centre, measured from the bar's top.
+function barLayout (count: number, size: number, width: number, step: number)
+{
+    const MARGIN = 4;
+    const oneRow = count * size <= width;
+    const rows = oneRow ? 1 : Math.ceil(count / Math.max(1, Math.floor(width / size)));
+    const perRow = Math.ceil(count / rows);
+    const spacing = oneRow ? step : size;
+    return {
+        height: rows * size + MARGIN * 2,
+        place: (i: number) =>
+        {
+            const row = Math.floor(i / perRow);
+            const inRow = Math.min(perRow, count - row * perRow);
+            return {
+                x: width / 2 + (i % perRow - (inRow - 1) / 2) * spacing,
+                y: MARGIN + size / 2 + row * size
+            };
+        }
+    };
+}
+
 const setOf = (tile: TileIndex) => AUTOTILE_SETS.findIndex(set => set.tiles.includes(tile));
 const WALL_ICON: ButtonIcon = { key: AUTOTILE_SETS[setOf(TileIndex.Wall)].texture, frame: ISOLATED_FRAME };
 const SNOW_ICON: ButtonIcon = { key: 'tiles', frame: TileIndex.Floor };
@@ -91,48 +118,38 @@ export class EditorHud extends Scene
 
         const { width, height } = this.scale;
 
-        //  Top bar: home (the main menu), options, import, export, undo, redo and play
-        //  A little taller than the buttons in it
-        const barHeight = PANEL_SIZE + 8;
-        this.add.rectangle(0, 0, width, barHeight, BAR_COLOR, 0.92).setOrigin(0).setInteractive();
-        const top = barHeight / 2;
-        //  Laid out left to right with even gaps; each is PANEL_SIZE square
+        //  Top bar: home (the main menu), options, import, export, undo, redo and play, spread
+        //  across the screen with even gaps (see barLayout)
         const icon = { width: PANEL_SIZE, height: PANEL_SIZE, panel: true };
-        const items: { width: number, add: (x: number) => void }[] = [
-            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-home' }], () => this.editor.toMainMenu(), icon) },
-            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-gear' }], () => this.openOptions(), icon) },
-            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-import' }], () => this.editor.importLevel(), icon) },
-            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-export' }], () => this.editor.exportLevel(), icon) },
-            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-undo' }], () => this.editor.undo(), icon) },
-            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-redo' }], () => this.editor.redo(), icon) },
-            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-play' }], () => this.editor.play(), icon) }
+        const topButtons: [string, () => void][] = [
+            ['icon-home', () => this.editor.toMainMenu()],
+            ['icon-gear', () => this.openOptions()],
+            ['icon-import', () => this.editor.importLevel()],
+            ['icon-export', () => this.editor.exportLevel()],
+            ['icon-undo', () => this.editor.undo()],
+            ['icon-redo', () => this.editor.redo()],
+            ['icon-play', () => this.editor.play()]
         ];
-        const gap = (width - items.reduce((sum, item) => sum + item.width, 0)) / (items.length + 1);
-        let left = gap;
-        for (const item of items)
+        const topLayout = barLayout(topButtons.length, PANEL_SIZE, width,
+            PANEL_SIZE + (width - topButtons.length * PANEL_SIZE) / (topButtons.length + 1));
+        const barHeight = topLayout.height;
+        this.add.rectangle(0, 0, width, barHeight, BAR_COLOR, 0.92).setOrigin(0).setInteractive();
+        topButtons.forEach(([key, action], i) =>
         {
-            item.add(left + item.width / 2);
-            left += item.width + gap;
-        }
+            const { x, y } = topLayout.place(i);
+            addIconButton(this, x, y, [{ key }], action, icon);
+        });
 
-        //  Bottom bar: the palette (keys 1-9). In one row while the screen is wide enough, the gaps
-        //  between buttons shrinking as it narrows until the buttons touch. Narrower than that, in
-        //  as few rows as fit, as evenly filled as possible and each centred, with the buttons
-        //  touching, to take as little of the screen as possible. The bar has a small margin.
-        const oneRow = PALETTE.length * PALETTE_BUTTON_SIZE <= width;
-        const step = oneRow ? Math.min(PALETTE_STEP, width / PALETTE.length) : PALETTE_BUTTON_SIZE;
-        const rows = oneRow ? 1 : Math.ceil(PALETTE.length / Math.max(1, Math.floor(width / PALETTE_BUTTON_SIZE)));
-        const perRow = Math.ceil(PALETTE.length / rows);
-        const padding = 4;
-        const paletteBarHeight = rows * PALETTE_BUTTON_SIZE + padding * 2;
+        //  Bottom bar: the palette (keys 1-9), spaced up to PALETTE_STEP apart (see barLayout)
+        const paletteLayout = barLayout(PALETTE.length, PALETTE_BUTTON_SIZE, width, Math.min(PALETTE_STEP, width / PALETTE.length));
+        const paletteBarHeight = paletteLayout.height;
         this.add.rectangle(0, height - paletteBarHeight, width, paletteBarHeight, BAR_COLOR, 0.92).setOrigin(0).setInteractive();
         const paletteSize = { width: PALETTE_BUTTON_SIZE, height: PALETTE_BUTTON_SIZE, panel: true };
         PALETTE.forEach((tool, i) =>
         {
-            const row = Math.floor(i / perRow);
-            const inRow = Math.min(perRow, PALETTE.length - row * perRow);
-            const x = width / 2 + (i % perRow - (inRow - 1) / 2) * step;
-            const y = height - paletteBarHeight + padding + PALETTE_BUTTON_SIZE / 2 + row * PALETTE_BUTTON_SIZE;
+            const place = paletteLayout.place(i);
+            const x = place.x;
+            const y = height - paletteBarHeight + place.y;
             const button = addIconButton(this, x, y, PALETTE_ICONS[tool], () => this.editor.selectTool(tool), paletteSize);
             this.paletteButtons.set(tool, button);
 
