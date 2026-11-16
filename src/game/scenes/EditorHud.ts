@@ -160,7 +160,19 @@ export class EditorHud extends Scene
         {
             listeners.forEach(([event, fn]) => this.editor.events.off(event, fn));
         });
-        this.input.keyboard?.on('keydown-ESC', () => this.closeOptions());
+        //  Esc closes the Options popup if it's open, and otherwise leaves for the main menu, like
+        //  the Menu button
+        this.input.keyboard?.on('keydown-ESC', () =>
+        {
+            if (this.optionsPopup)
+            {
+                this.closeOptions();
+            }
+            else
+            {
+                this.editor.toMainMenu();
+            }
+        });
         this.showAnalysis();
     }
 
