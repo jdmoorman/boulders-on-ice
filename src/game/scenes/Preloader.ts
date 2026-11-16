@@ -52,7 +52,7 @@ export class Preloader extends Scene
         this.load.image('icon-gear', 'ui/icons/ranitaya_settings.png');
         this.load.image('icon-restart', 'ui/icons/ranitaya_reset.png');
         this.load.image('icon-lock', 'ui/icons/ranitaya_lock.png');
-        this.load.image('ui-panel', 'ui/ranitaya_panel.png');
+        this.load.image('ui-panel', 'ui/ranitaya_square_panel.png');
         loadPlates(this);
         loadDoors(this);
         loadTraps(this);
