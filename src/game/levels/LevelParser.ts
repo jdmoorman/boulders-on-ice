@@ -136,42 +136,45 @@ export function parseLevelDraft (text: string): LevelDraft
 
             row.push(entry.tile);
 
-            if (entry.entity === 'goal')
+            for (const entity of entry.entities ?? [])
             {
-                if (goal)
+                if (entity === 'goal')
                 {
-                    throw new LevelParseError(
-                        `Second goal at row ${y + 1}, column ${x + 1} (first at row ${goal.y + 1}, column ${goal.x + 1})`
-                    );
+                    if (goal)
+                    {
+                        throw new LevelParseError(
+                            `Second goal at row ${y + 1}, column ${x + 1} (first at row ${goal.y + 1}, column ${goal.x + 1})`
+                        );
+                    }
+                    goal = { x, y };
                 }
-                goal = { x, y };
-            }
 
-            if (entry.entity === 'player')
-            {
-                if (player)
+                if (entity === 'player')
                 {
-                    throw new LevelParseError(
-                        `Second player start at row ${y + 1}, column ${x + 1} (first at row ${player.y + 1}, column ${player.x + 1})`
-                    );
+                    if (player)
+                    {
+                        throw new LevelParseError(
+                            `Second player start at row ${y + 1}, column ${x + 1} (first at row ${player.y + 1}, column ${player.x + 1})`
+                        );
+                    }
+                    player = { x, y };
                 }
-                player = { x, y };
-            }
-            else if (entry.entity === 'boulder')
-            {
-                boulders.push({ x, y });
-            }
-            else if (entry.entity === 'plate')
-            {
-                plates.push({ x, y });
-            }
-            else if (entry.entity === 'door')
-            {
-                doors.push({ x, y });
-            }
-            else if (entry.entity === 'trap')
-            {
-                traps.push({ x, y });
+                else if (entity === 'boulder')
+                {
+                    boulders.push({ x, y });
+                }
+                else if (entity === 'plate')
+                {
+                    plates.push({ x, y });
+                }
+                else if (entity === 'door')
+                {
+                    doors.push({ x, y });
+                }
+                else if (entity === 'trap')
+                {
+                    traps.push({ x, y });
+                }
             }
         }
 

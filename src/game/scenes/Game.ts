@@ -7,7 +7,7 @@ import { LEVEL_PACKS, LEVELS, isLastInPack, levelText } from '../levels/levelLis
 import { LEVELS_PER_PAGE, LevelSelectData } from './LevelSelect';
 import { markCompleted } from '../progress';
 import { clearLevelInProgress, fitsLevel, loadLevelInProgress, saveLevelInProgress } from '../levelInProgress';
-import { doorsOpen, resolveMove, Direction } from '../movement/Movement';
+import { doorsOpen, resolveMove, startArmedTraps, Direction } from '../movement/Movement';
 import { MOVEMENT, PLATES } from '../settings';
 import { gameSettings } from '../gameSettings';
 import { TEXT_STYLE } from '../ui/Button';
@@ -169,13 +169,13 @@ export class Game extends Scene
         const data = parseLevel(this.levelText ?? levelText(this, LEVELS[this.levelIndex]));
         this.facing = 'down';
         const saved = this.resume ? loadLevelInProgress() : null;
-        let armedTraps: number[] = [];
+        let armedTraps = startArmedTraps(data);
         if (saved && !this.levelText && saved.levelKey === LEVELS[this.levelIndex].key && fitsLevel(saved, data))
         {
             data.player = saved.player;
             data.boulders = saved.boulders;
             this.facing = saved.facing;
-            armedTraps = saved.armedTraps ?? [];
+            armedTraps = saved.armedTraps ?? startArmedTraps(data);
         }
         this.level = buildLevel(this, data, armedTraps);
         this.playerPos = { ...data.player };

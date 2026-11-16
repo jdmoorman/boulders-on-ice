@@ -1,4 +1,4 @@
-import { DIRECTION_DELTA, Direction, resolveMove } from '../movement/Movement';
+import { DIRECTION_DELTA, Direction, resolveMove, startArmedTraps } from '../movement/Movement';
 import type { GridPoint, LevelData } from '../levels/LevelParser';
 import { TileIndex } from '../levels/Tiles';
 import { AnalysisMessage, AnalysisRequest, DIRECTION_LETTERS, FoundTile, MAX_STATES } from './analysisShared';
@@ -26,7 +26,7 @@ const PROGRESS_MS = 100;
 const CHECK_EVERY = 1000;
 
 addEventListener('message', (event: MessageEvent<AnalysisRequest>) =>
-    analyze(event.data.level, event.data.freeSnowWalking, event.data.solve ?? false, event.data.armedTraps ?? []));
+    analyze(event.data.level, event.data.freeSnowWalking, event.data.solve ?? false, event.data.armedTraps ?? startArmedTraps(event.data.level)));
 
 //  The best way found so far to reach a tile: from a position, plus the final move when the tile
 //  is passed through (or is the exit) rather than stood on

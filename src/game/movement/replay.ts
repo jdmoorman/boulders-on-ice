@@ -1,5 +1,5 @@
 import type { GridPoint, LevelData } from '../levels/LevelParser';
-import { resolveMove } from './Movement';
+import { resolveMove, startArmedTraps } from './Movement';
 import { LETTER_DIRECTIONS } from '../editor/analysisShared';
 
 //  Part of a route, for drawing: cells the player or a pushed boulder passes through, in order
@@ -13,7 +13,7 @@ export interface PathSegment
 //  replayed with the game's rules. armedTraps: indices into level.traps of traps already armed.
 //  Stopping on a trap arms it, and a boulder stopping on an armed one falls in and leaves it
 //  unarmed (the player stopping on one would end the route).
-export function replayMoves (level: LevelData, moves: string, armedTraps: readonly number[] = []): PathSegment[]
+export function replayMoves (level: LevelData, moves: string, armedTraps: readonly number[] = startArmedTraps(level)): PathSegment[]
 {
     const data: LevelData = { ...level, boulders: level.boulders.map(b => ({ ...b })) };
     let player = data.player;

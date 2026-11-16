@@ -7,7 +7,7 @@ import { PLAYER_FRAME_HEIGHT, PLAYER_FRAME_WIDTH } from '../playerAnimations';
 import { PLAYER_SPRITE } from '../settings';
 import { PLATE_ART_TILE_SIZE, PLATE_DROP, PLATE_FRAME_HEIGHT, PLATE_FRAME_WIDTH, PLATE_UP_FRAME } from '../plates';
 import { DOOR_BOTTOM, DOOR_CLOSED, DOOR_FRAME_HEIGHT, DOOR_FRAME_WIDTH, DOOR_OPEN } from '../doors';
-import { doorsOpen } from '../movement/Movement';
+import { doorsOpen, startArmedTraps } from '../movement/Movement';
 
 //  Pixels per tile of the art itself; thumbnails with smaller tiles shrink it
 const ART_TILE_SIZE = 16;
@@ -96,9 +96,9 @@ export function levelThumbnail (scene: Scene, level: LevelInfo, maxWidth: number
 
     //  Then row by row, so things further down cover the tall walls behind them
     const boulders = new Set(data.boulders.map(b => `${b.x},${b.y}`));
-    //  Doors as they start: closed unless the level has no plates and no traps
+    //  Doors as they start: closed unless every plate is held down and every trap armed
     const doors = new Set(data.doors.map(d => `${d.x},${d.y}`));
-    const door = doorsOpen(data, [data.player, ...data.boulders], data.traps.length === 0) ? DOOR_OPEN : DOOR_CLOSED;
+    const door = doorsOpen(data, [data.player, ...data.boulders], startArmedTraps(data).length === data.traps.length) ? DOOR_OPEN : DOOR_CLOSED;
     const doorHeight = T * DOOR_FRAME_HEIGHT / DOOR_FRAME_WIDTH;
     tiles.forEach((row, y) =>
     {

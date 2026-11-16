@@ -7,7 +7,7 @@ import { AUTOTILE_SETS, AutotileSet, autotileFrame, autotileFrameSize, autotileL
 import { Plate, PLATE_ART_TILE_SIZE, PLATE_DROP, PLATE_PRESSED, PLATE_UP_FRAME } from '../plates';
 import { Door, DOOR_BOTTOM, DOOR_CLOSED, DOOR_FRAME_WIDTH, setDoorOpen } from '../doors';
 import { Trap, TRAP_FRAME_SIZE, trapArmedFrame } from '../traps';
-import { doorsOpen } from '../movement/Movement';
+import { doorsOpen, startArmedTraps } from '../movement/Movement';
 
 export interface BuiltLevel
 {
@@ -139,7 +139,7 @@ export function addPlayer (scene: Scene, p: GridPoint): GameObjects.Sprite
 //  armedTraps: indices into data.traps of traps already armed (in a level picked up where it was left).
 //  Requires the 'tiles' texture from generateTextures(), and the 'player', plate, door and trap
 //  spritesheets and 'boulder' and 'goal' images loaded in the Preloader.
-export function buildLevel (scene: Scene, data: LevelData, armedTraps: readonly number[] = []): BuiltLevel
+export function buildLevel (scene: Scene, data: LevelData, armedTraps: readonly number[] = startArmedTraps(data)): BuiltLevel
 {
     const map = scene.make.tilemap({
         //  Walls, snow and ice are drawn with the autotile frame that fits their neighbours;

@@ -2,7 +2,7 @@ import { GridPoint, LevelData, LevelDraft } from '../levels/LevelParser';
 import { TileIndex } from '../levels/Tiles';
 
 //  'erase' clears a cell completely; 'erase-entity' removes only what stands on it (the player, a
-//  boulder, plate, door or the exit), leaving the snow or ice
+//  boulder, plate, door, trap or the exit), leaving the snow or ice
 export type EditorTool =
     'wall' | 'snow' | 'ice' | 'exit' | 'player' | 'boulder' | 'plate' | 'door' | 'trap' | 'erase' | 'erase-entity';
 
@@ -34,7 +34,8 @@ export interface EditorSnapshot
 }
 
 //  The level being edited: a fixed-size square canvas of tiles plus the player, boulders,
-//  pressure plates, doors, traps and exit. Each cell holds at most one of those. Plain data, so it can be kept in the registry across playtests.
+//  pressure plates, doors, traps and exit. Each cell holds at most one of those, except that the
+//  player or a boulder can stand on a plate or trap. Plain data, so it can be kept in the registry across playtests.
 export class EditorLevel
 {
     readonly size: number;
@@ -227,21 +228,23 @@ export class EditorLevel
                 this.goal = { x, y };
                 break;
 
+            //  The player and boulders keep a plate or trap under them
             case 'player':
                 this.makeGround(x, y);
-                this.clearEntity(x, y);
+                this.clearStanding(x, y);
                 this.player = { x, y };
                 break;
 
             case 'boulder':
                 this.makeGround(x, y);
-                this.clearEntity(x, y);
+                this.clearStanding(x, y);
                 this.boulders.add(cellKey(x, y));
                 break;
 
+            //  Plates and traps only stand on snow, and keep the player or a boulder on them
             case 'plate':
-                this.makeGround(x, y);
-                this.clearEntity(x, y);
+                this.setTile(x, y, TileIndex.Floor);
+                this.clearUnderfoot(x, y);
                 this.plates.add(cellKey(x, y));
                 break;
 
@@ -252,9 +255,8 @@ export class EditorLevel
                 break;
 
             case 'trap':
-                //  Traps only stand on snow
                 this.setTile(x, y, TileIndex.Floor);
-                this.clearEntity(x, y);
+                this.clearUnderfoot(x, y);
                 this.traps.add(cellKey(x, y));
                 break;
 
@@ -346,9 +348,11 @@ export class EditorLevel
     {
         const tile = this.tiles[y][x];
         const onIce = tile === TileIndex.Ice;
+        const plate = this.hasPlateAt(x, y);
+        const trap = this.hasTrapAt(x, y);
         if (this.isPlayerAt(x, y))
         {
-            return onIce ? 'P' : 'p';
+            return plate ? '+' : trap ? '!' : onIce ? 'P' : 'p';
         }
         if (this.isGoalAt(x, y))
         {
@@ -356,17 +360,17 @@ export class EditorLevel
         }
         if (this.hasBoulderAt(x, y))
         {
-            return onIce ? 'B' : 'b';
+            return plate ? '*' : trap ? '&' : onIce ? 'B' : 'b';
         }
-        if (this.hasPlateAt(x, y))
+        if (plate)
         {
-            return onIce ? 'O' : 'o';
+            return 'o';
         }
         if (this.hasDoorAt(x, y))
         {
             return onIce ? 'D' : 'd';
         }
-        if (this.hasTrapAt(x, y))
+        if (trap)
         {
             return 't';
         }
@@ -393,9 +397,10 @@ export class EditorLevel
         {
             this.goal = goal;
         }
-        //  Traps stand only on snow
+        //  Plates and traps stand only on snow
         if (tile !== TileIndex.Floor)
         {
+            this.plates.delete(cellKey(x, y));
             this.traps.delete(cellKey(x, y));
         }
         this.tiles[y][x] = tile;
@@ -417,15 +422,28 @@ export class EditorLevel
     //  Removes the player, a boulder, a plate, a door, a trap or the exit from a cell
     private clearEntity (x: number, y: number)
     {
+        this.clearStanding(x, y);
+        this.clearUnderfoot(x, y);
+    }
+
+    //  Removes the player, a boulder or a door from a cell, keeping a plate or trap
+    private clearStanding (x: number, y: number)
+    {
         if (this.isPlayerAt(x, y))
         {
             this.player = null;
         }
+        this.boulders.delete(cellKey(x, y));
+        this.doors.delete(cellKey(x, y));
+    }
+
+    //  Removes a plate, a trap, a door or the exit from a cell, keeping the player or a boulder
+    private clearUnderfoot (x: number, y: number)
+    {
         if (this.isGoalAt(x, y))
         {
             this.goal = null;
         }
-        this.boulders.delete(cellKey(x, y));
         this.plates.delete(cellKey(x, y));
         this.doors.delete(cellKey(x, y));
         this.traps.delete(cellKey(x, y));

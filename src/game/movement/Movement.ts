@@ -47,6 +47,14 @@ export function doorsOpen (data: LevelData, resting: readonly GridPoint[], traps
     return trapsArmed && data.plates.every(plate => resting.some(p => samePoint(p, plate)));
 }
 
+//  The traps armed when a level starts: those the player or a boulder starts on, as if it had
+//  just stopped there. Indices into data.traps.
+export function startArmedTraps (data: LevelData): number[]
+{
+    return data.traps.flatMap((t, i) =>
+        samePoint(t, data.player) || data.boulders.some(b => samePoint(b, t)) ? [i] : []);
+}
+
 //  True if nothing can enter this cell: off the map, void, wall, the exit, a boulder, or a
 //  closed door. (The exit is handled as a special case by resolveMove.)
 export function isBlocked (data: LevelData, p: GridPoint, open: boolean): boolean
