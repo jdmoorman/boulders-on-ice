@@ -71,9 +71,6 @@ export function leaveGame (scene: Scene, target: GameOrigin, data?: object): voi
     scene.scene.start(target, data);
 }
 
-//  Emitted on the Game scene's events when the step count changes
-export const COUNTS_CHANGED = 'counts-changed';
-
 export class Game extends Scene
 {
     levelIndex = 0;
@@ -90,8 +87,8 @@ export class Game extends Scene
     springing = false;
     //  Direction the player sprite faces; levels start facing down
     facing: Direction = 'down';
-    //  Moves made so far: every arrow-key press that moved the player or pushed a boulder. The
-    //  HUD shows it; COUNTS_CHANGED is emitted when it changes.
+    //  Moves made so far: every arrow-key press that moved the player or pushed a boulder, shown
+    //  when the level is complete
     steps = 0;
     //  The fewest steps that solve the level from its start (see bestSteps)
     private best: Promise<number | null>;
@@ -368,7 +365,6 @@ export class Game extends Scene
         {
             this.history.push(this.snapshot());
             this.steps++;
-            this.events.emit(COUNTS_CHANGED);
         }
         switch (move.kind)
         {

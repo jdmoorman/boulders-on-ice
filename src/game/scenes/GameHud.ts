@@ -1,7 +1,7 @@
-import { Scene, Scenes } from 'phaser';
-import { addIconButton, PANEL_SIZE, TEXT_STYLE } from '../ui/Button';
+import { Scene } from 'phaser';
+import { addIconButton, PANEL_SIZE } from '../ui/Button';
 import { gameSettings } from '../gameSettings';
-import { COUNTS_CHANGED, type Game } from './Game';
+import type { Game } from './Game';
 
 //  Buttons over the level while it's played, in their own scene so they stay put while the
 //  camera follows the player. The Game scene launches it and stops it on leaving.
@@ -44,14 +44,5 @@ export class GameHud extends Scene
             addIconButton(this, x, HUD_MARGIN + HUD_BUTTON_SIZE / 2, [{ key: icon }], whenPlaying(action),
                 { width: HUD_BUTTON_SIZE, height: HUD_BUTTON_SIZE, panel: true });
         });
-
-        //  Top right: the steps so far
-        const counts = this.add.text(this.scale.width - HUD_MARGIN, HUD_MARGIN, '', { ...TEXT_STYLE, fontSize: 24, strokeThickness: 5, align: 'right' })
-            .setOrigin(1, 0);
-        const update = () => counts.setText(`Steps ${game.steps}`);
-        update();
-        //  Game's events outlive this scene, so stop listening when it shuts down
-        game.events.on(COUNTS_CHANGED, update);
-        this.events.once(Scenes.Events.SHUTDOWN, () => game.events.off(COUNTS_CHANGED, update));
     }
 }
