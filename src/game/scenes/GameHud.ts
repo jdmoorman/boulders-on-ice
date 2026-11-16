@@ -44,10 +44,10 @@ export class GameHud extends Scene
                 { width: HUD_BUTTON_SIZE, height: HUD_BUTTON_SIZE, panel: true });
         });
 
-        //  Top right: the steps and pushes so far
+        //  Top right: the steps so far
         const counts = this.add.text(this.scale.width - HUD_MARGIN, HUD_MARGIN, '', { ...TEXT_STYLE, fontSize: 24, strokeThickness: 5, align: 'right' })
             .setOrigin(1, 0);
-        const update = () => counts.setText(`Steps ${game.steps}\nPushes ${game.pushes}`);
+        const update = () => counts.setText(`Steps ${game.steps}`);
         update();
         //  Game's events outlive this scene, so stop listening when it shuts down
         game.events.on(COUNTS_CHANGED, update);

@@ -11,9 +11,8 @@ export interface LevelCompleteData
     levelText?: string;
     //  The screen the level was started from, kept for the next level or a replay (see GameData)
     from?: GameOrigin;
-    //  Steps and pushes taken, and the fewest steps that solve the level (see bestSteps)
+    //  Steps taken, and the fewest steps that solve the level (see bestSteps)
     steps: number;
-    pushes: number;
     best: Promise<number | null>;
 }
 
@@ -26,7 +25,6 @@ export class LevelComplete extends Scene
     private levelText: string | undefined;
     private from: GameOrigin | undefined;
     private steps = 0;
-    private pushes = 0;
     private best: Promise<number | null> = Promise.resolve(null);
 
     constructor ()
@@ -41,7 +39,6 @@ export class LevelComplete extends Scene
         this.levelText = data.levelText;
         this.from = data.from;
         this.steps = data.steps;
-        this.pushes = data.pushes;
         this.best = data.best;
     }
 
@@ -61,8 +58,7 @@ export class LevelComplete extends Scene
             .setOrigin(0.5);
 
         //  The steps taken against the fewest possible, filled in once the search has finished
-        const pushes = this.pushes === 1 ? '1 push' : `${this.pushes} pushes`;
-        this.add.text(cx, cy - 32, `${this.steps} steps, ${pushes}`, { ...TEXT_STYLE, fontSize: 24 })
+        this.add.text(cx, cy - 32, this.steps === 1 ? '1 step' : `${this.steps} steps`, { ...TEXT_STYLE, fontSize: 24 })
             .setOrigin(0.5);
         const bestText = this.add.text(cx, cy + 2, 'Fewest possible: …', { ...TEXT_STYLE, fontSize: 24 })
             .setOrigin(0.5);
