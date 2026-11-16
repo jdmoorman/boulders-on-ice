@@ -13,6 +13,8 @@ const PACK_W = 640;
 const PACK_STEP = 88;
 const PACKS_TOP = 190;
 const KEY_SCROLL = 80;
+//  How far (in screen pixels) a press has to move to scroll rather than press a button
+const DRAG_THRESHOLD = 12;
 //  The red ✕ beside an imported pack, which removes it
 const REMOVE_SIZE = 56;
 const REMOVE_FILL = 0xb03a3a;
@@ -61,6 +63,8 @@ export interface LevelSelectData
 export class LevelSelect extends Scene
 {
     private maxScroll = 0;
+    //  The current press has moved far enough to be a drag (see addDragScrolling)
+    private dragged = false;
     private messageText: GameObjects.Text;
     private messageTimer: Time.TimerEvent | null = null;
 
@@ -106,7 +110,7 @@ export class LevelSelect extends Scene
         LEVEL_PACKS.forEach((pack, i) =>
         {
             const y = PACKS_TOP + i * PACK_STEP;
-            const button = addButton(this, cx, y, pack.name, () => this.scene.restart({ pack: i } satisfies LevelSelectData),
+            const button = addButton(this, cx, y, pack.name, this.unlessDragged(() => this.scene.restart({ pack: i } satisfies LevelSelectData)),
                 { width: packW });
             const done = pack.levels.filter(level => isCompleted(level.key)).length;
             const all = done === pack.levels.length;
@@ -125,12 +129,13 @@ export class LevelSelect extends Scene
         this.maxScroll = Math.max(0, bottom - (height - BAR_HEIGHT));
 
         this.addBar([
-            ['Back', () => this.scene.start('MainMenu')],
-            ['Import', () => this.pickPack()]
+            ['Back', this.unlessDragged(() => this.scene.start('MainMenu'))],
+            ['Import', this.unlessDragged(() => this.pickPack())]
         ]);
 
         this.input.on(Input.Events.POINTER_WHEEL,
             (_pointer: Input.Pointer, _over: unknown, _dx: number, dy: number) => this.scrollBy(dy));
+        this.addDragScrolling();
         const keyboard = this.input.keyboard;
         if (keyboard)
         {
@@ -149,7 +154,7 @@ export class LevelSelect extends Scene
         addIcon(this, x, y, 'icon-x', undefined, 3);
         button.on('pointerover', () => button.setFillStyle(REMOVE_FILL_HOVER));
         button.on('pointerout', () => button.setFillStyle(REMOVE_FILL));
-        button.on('pointerup', () =>
+        button.on('pointerup', this.unlessDragged(() =>
         {
             if (!window.confirm(`Remove the level pack "${name}"? You can import it again later, and your progress through it is kept.`))
             {
@@ -157,7 +162,7 @@ export class LevelSelect extends Scene
             }
             removePack(this, name);
             this.scene.restart({ message: `Removed ${name}.` } satisfies LevelSelectData);
-        });
+        }));
     }
 
     //  One page of a pack's levels, with Back to the pack list and Prev and Next between pages
@@ -392,6 +397,57 @@ export class LevelSelect extends Scene
         this.messageText.setText(text);
         this.messageTimer?.remove();
         this.messageTimer = this.time.delayedCall(MESSAGE_MS, () => this.messageText.setText(''));
+    }
+
+    //  Dragging the list (with a finger or the mouse) scrolls it. Once a press has moved
+    //  DRAG_THRESHOLD it's a drag, and letting go doesn't press the button it ends on (see
+    //  unlessDragged).
+    private addDragScrolling ()
+    {
+        let lastY: number | null = null;
+        let travelled = 0;
+        this.dragged = false;
+        this.input.on(Input.Events.POINTER_DOWN, (pointer: Input.Pointer) =>
+        {
+            lastY = pointer.y;
+            travelled = 0;
+            this.dragged = false;
+        });
+        this.input.on(Input.Events.POINTER_MOVE, (pointer: Input.Pointer) =>
+        {
+            if (lastY === null || !pointer.isDown)
+            {
+                return;
+            }
+            travelled += Math.abs(pointer.y - lastY);
+            if (travelled >= DRAG_THRESHOLD)
+            {
+                this.dragged = true;
+            }
+            if (this.dragged)
+            {
+                this.scrollBy(lastY - pointer.y);
+            }
+            lastY = pointer.y;
+        });
+        const release = () =>
+        {
+            lastY = null;
+        };
+        this.input.on(Input.Events.POINTER_UP, release);
+        this.input.on(Input.Events.POINTER_UP_OUTSIDE, release);
+    }
+
+    //  A button action that does nothing if the press was a drag to scroll
+    private unlessDragged (action: () => void): () => void
+    {
+        return () =>
+        {
+            if (!this.dragged)
+            {
+                action();
+            }
+        };
     }
 
     private scrollBy (dy: number)
