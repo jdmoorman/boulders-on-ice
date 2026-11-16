@@ -109,12 +109,18 @@ export function addDoor (scene: Scene, p: GridPoint): GameObjects.Sprite
         .setDepth((p.y + 1) * TILE_SIZE);
 }
 
+//  How far boulders are drawn above their tile, as a fraction of a tile: one pixel of the 16-pixel
+//  art, so a pressure plate under one shows below it
+export const BOULDER_RAISE = 1 / 16;
+
 //  Adds a boulder image on tile p.
 export function addBoulder (scene: Scene, p: GridPoint): GameObjects.Image
 {
     const { x, y } = tileCenter(p);
-    //  Drawn at one tile, whatever the image's size
-    const boulder = scene.add.image(x, y, 'boulder').setDisplaySize(TILE_SIZE, TILE_SIZE);
+    //  Drawn at one tile, whatever the image's size. Raised by moving its origin down, so its
+    //  position (and the tweens that move it) stay at the tile centre.
+    const boulder = scene.add.image(x, y, 'boulder').setDisplaySize(TILE_SIZE, TILE_SIZE)
+        .setOrigin(0.5, 0.5 + BOULDER_RAISE);
     ySortDepth(boulder);
     return boulder;
 }

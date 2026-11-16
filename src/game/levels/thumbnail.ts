@@ -8,6 +8,7 @@ import { PLAYER_SPRITE } from '../settings';
 import { PLATE_ART_TILE_SIZE, PLATE_DROP, PLATE_FRAME_HEIGHT, PLATE_FRAME_WIDTH, PLATE_UP_FRAME } from '../plates';
 import { DOOR_BOTTOM, DOOR_CLOSED, DOOR_FRAME_HEIGHT, DOOR_FRAME_WIDTH, DOOR_OPEN } from '../doors';
 import { doorsOpen, startArmedTraps } from '../movement/Movement';
+import { BOULDER_RAISE } from './LevelLoader';
 
 //  Pixels per tile of the art itself; thumbnails with smaller tiles shrink it
 const ART_TILE_SIZE = 16;
@@ -127,7 +128,7 @@ export function levelThumbnail (scene: Scene, level: LevelInfo, maxWidth: number
             }
             if (boulders.has(`${x},${y}`))
             {
-                ctx.drawImage(source('boulder'), x * T, bottom - T, T, T);
+                ctx.drawImage(source('boulder'), x * T, bottom - T - BOULDER_RAISE * T, T, T);
             }
         });
 
