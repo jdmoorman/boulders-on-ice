@@ -90,7 +90,7 @@ export class EditorHud extends Scene
 
         const { width, height } = this.scale;
 
-        //  Top bar: home (the main menu), undo, redo, options, import, export and play
+        //  Top bar: home (the main menu), options, import, export, undo, redo and play
         //  A little taller than the buttons in it
         const barHeight = PANEL_SIZE + 8;
         this.add.rectangle(0, 0, width, barHeight, BAR_COLOR, 0.92).setOrigin(0).setInteractive();
@@ -99,11 +99,11 @@ export class EditorHud extends Scene
         const icon = { width: PANEL_SIZE, height: PANEL_SIZE, panel: true };
         const items: { width: number, add: (x: number) => void }[] = [
             { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-home' }], () => this.editor.toMainMenu(), icon) },
-            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-undo' }], () => this.editor.undo(), icon) },
-            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-redo' }], () => this.editor.redo(), icon) },
             { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-gear' }], () => this.openOptions(), icon) },
             { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-import' }], () => this.editor.importLevel(), icon) },
             { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-export' }], () => this.editor.exportLevel(), icon) },
+            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-undo' }], () => this.editor.undo(), icon) },
+            { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-redo' }], () => this.editor.redo(), icon) },
             { width: PANEL_SIZE, add: x => addIconButton(this, x, top, [{ key: 'icon-play' }], () => this.editor.play(), icon) }
         ];
         const gap = (width - items.reduce((sum, item) => sum + item.width, 0)) / (items.length + 1);
