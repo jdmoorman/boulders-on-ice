@@ -52,6 +52,8 @@ export class Preloader extends Scene
         this.load.image('icon-gear', 'ui/icons/ranitaya_settings.png');
         this.load.image('icon-restart', 'ui/icons/ranitaya_reset.png');
         this.load.image('icon-lock', 'ui/icons/ranitaya_lock.png');
+        //  The game's undo; the editor's undo and redo are drawn (see textures.ts)
+        this.load.image('icon-game-undo', 'ui/icons/ranitaya_undo.png');
         this.load.image('ui-panel', 'ui/ranitaya_square_panel.png');
         this.load.image('ui-wide-panel', 'ui/ranitaya_wide_panel.png');
         loadPlates(this);
@@ -71,7 +73,7 @@ export class Preloader extends Scene
         //  For example, you can define global animations here, so we can use them in other scenes.
         //  Keep the scaled-up pixel art sharp (only these textures; others still smooth)
         for (const key of ['player', 'boulder', 'goal', 'floor', 'plate-press', 'plate-unpress', 'door-open', 'door-close', 'trap',
-            'icon-pencil', 'icon-home', 'icon-gear', 'icon-restart', 'icon-lock', 'ui-panel', 'ui-wide-panel'])
+            'icon-pencil', 'icon-home', 'icon-gear', 'icon-restart', 'icon-lock', 'icon-game-undo', 'ui-panel', 'ui-wide-panel'])
         {
             this.textures.get(key).setFilter(Textures.FilterMode.NEAREST);
         }

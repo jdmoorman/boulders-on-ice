@@ -36,6 +36,21 @@ export interface GameData
     //  The screen the level was started from, which Esc goes back to: the editor by default when
     //  playtesting, else the main menu
     from?: GameOrigin;
+    //  Kept across restarts and undos of the same level: the positions undo goes back to, latest
+    //  last, and the position to start in instead of the level's own start
+    history?: GameSnapshot[];
+    state?: GameSnapshot;
+}
+
+//  Where everything is at one moment of play, for undo
+export interface GameSnapshot
+{
+    player: GridPoint;
+    boulders: GridPoint[];
+    facing: Direction;
+    //  Indices into the level's traps
+    armedTraps: number[];
+    steps: number;
 }
 
 //  Screens a level can be started from
@@ -86,6 +101,9 @@ export class Game extends Scene
     private reportedDir: Direction | null = null;
     private resume = false;
     private from: GameOrigin = 'MainMenu';
+    //  Positions to undo back to, latest last: one before every move and every restart
+    private history: GameSnapshot[] = [];
+    private startState: GameSnapshot | null = null;
     //  Dev mode, while H is held: the solution route drawn over the level, the search finding it,
     //  a note when there's no solution from here, and whether the route (or note) is ready for
     //  the current position
@@ -106,6 +124,8 @@ export class Game extends Scene
         this.levelText = data.levelText ?? null;
         this.resume = data.resume ?? false;
         this.from = data.from ?? (this.levelText ? 'Editor' : 'MainMenu');
+        this.history = data.history ?? [];
+        this.startState = data.state ?? null;
     }
 
     //  Data that starts this same level again
@@ -115,8 +135,41 @@ export class Game extends Scene
     {
         if (!this.levelComplete && !this.springing)
         {
+            //  Undo after a restart goes back to where things were. Mid-move, that's where they
+            //  were before the move, which the move already added.
+            if (!this.isMoving)
+            {
+                this.history.push(this.snapshot());
+            }
             this.scene.restart(this.restartData());
         }
+    }
+
+    //  Goes back to the position before the last move or restart (Z and the HUD's undo button).
+    //  Not once the level is complete, while a trap springs, or while something moves.
+    undo ()
+    {
+        const state = this.history.pop();
+        if (!state || this.levelComplete || this.springing || this.isMoving)
+        {
+            if (state)
+            {
+                this.history.push(state);
+            }
+            return;
+        }
+        this.scene.restart({ ...this.restartData(), state } satisfies GameData);
+    }
+
+    private snapshot (): GameSnapshot
+    {
+        return {
+            player: { ...this.playerPos },
+            boulders: this.level.data.boulders.map(b => ({ ...b })),
+            facing: this.facing,
+            armedTraps: this.level.traps.flatMap((t, i) => t.armed ? [i] : []),
+            steps: this.steps
+        };
     }
 
     //  Dev mode: opens this level, as it starts, in the editor, after asking if that would replace
@@ -146,9 +199,8 @@ export class Game extends Scene
 
     private restartData (): GameData
     {
-        return this.levelText
-            ? { levelText: this.levelText, from: this.from }
-            : { levelIndex: this.levelIndex, from: this.from };
+        const level: GameData = this.levelText ? { levelText: this.levelText } : { levelIndex: this.levelIndex };
+        return { ...level, from: this.from, history: this.history };
     }
 
     //  Leaves the level for the screen it was started from (Esc and the HUD's home button).
@@ -189,6 +241,15 @@ export class Game extends Scene
             this.facing = saved.facing;
             armedTraps = saved.armedTraps ?? startArmedTraps(data);
             this.steps = saved.steps ?? 0;
+        }
+        else if (this.startState)
+        {
+            const state = this.startState;
+            data.player = { ...state.player };
+            data.boulders = state.boulders.map(b => ({ ...b }));
+            this.facing = state.facing;
+            armedTraps = [...state.armedTraps];
+            this.steps = state.steps;
         }
         this.level = buildLevel(this, data, armedTraps);
         this.playerPos = { ...data.player };
@@ -241,6 +302,14 @@ export class Game extends Scene
                 if (!otherKeyHeld)
                 {
                     this.restartLevel();
+                }
+            });
+            //  Z undoes, with or without Ctrl or Cmd
+            keyboard.on('keydown-Z', (event: KeyboardEvent) =>
+            {
+                if (!event.altKey && !event.shiftKey)
+                {
+                    this.undo();
                 }
             });
             //  Dev mode: N finishes the level on the spot (not with a modifier, like R)
@@ -297,6 +366,7 @@ export class Game extends Scene
         this.facing = dir;
         if (move.kind !== 'blocked')
         {
+            this.history.push(this.snapshot());
             this.steps++;
             this.events.emit(COUNTS_CHANGED);
         }
