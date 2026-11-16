@@ -1,8 +1,8 @@
-import { Scene, Scenes, Input, GameObjects, Animations } from 'phaser';
+import { Core, Scene, Scenes, Input, GameObjects, Animations } from 'phaser';
 import { parseLevel, GridPoint } from '../levels/LevelParser';
-import { buildLevel, BuiltLevel, tileCenter, ySortDepth } from '../levels/LevelLoader';
+import { addBoulder, buildLevel, BuiltLevel, tileCenter, ySortDepth } from '../levels/LevelLoader';
 import { TileIndex } from '../levels/Tiles';
-import type { Trap } from '../traps';
+import { trapArmedFrame, type Trap } from '../traps';
 import { LEVEL_PACKS, LEVELS, isLastInPack, levelText } from '../levels/levelList';
 import { LEVELS_PER_PAGE, LevelSelectData } from './LevelSelect';
 import { markCompleted } from '../progress';
@@ -39,6 +39,11 @@ export interface GameData
     //  last, and the position to start in instead of the level's own start
     history?: GameSnapshot[];
     state?: GameSnapshot;
+    //  Whether Z or U is still held after an undo, so undoing carries on
+    undoHeld?: boolean;
+    //  Undoing a fall into a trap: the position before the fatal step. The level starts as it
+    //  was just after the fall, and the player rises out of the pit and walks back to it.
+    unfall?: GameSnapshot;
 }
 
 //  Where everything is at one moment of play, for undo
@@ -49,6 +54,24 @@ export interface GameSnapshot
     facing: Direction;
     //  Indices into the level's traps
     armedTraps: number[];
+    //  The move made from here, played backwards when it's undone. Missing for a restart, or once
+    //  the level has started over since the move (the position no longer follows from it).
+    move?: UndoableMove;
+    //  The move ended with the player falling into a trap (and the level starting over)
+    fell?: boolean;
+}
+
+//  Who moved, the player or boulder `boulder`, and every tile they crossed, starting where they began
+export interface UndoableMove
+{
+    boulder?: number;
+    cells: GridPoint[];
+}
+
+//  The direction of a move: which way the player faced making it
+function moveDirection ({ cells: [first, second] }: UndoableMove): Direction
+{
+    return second.x > first.x ? 'right' : second.x < first.x ? 'left' : second.y > first.y ? 'down' : 'up';
 }
 
 //  Screens a level can be started from
@@ -94,6 +117,13 @@ export class Game extends Scene
     //  Positions to undo back to, latest last: one before every move and every restart
     private history: GameSnapshot[] = [];
     private startState: GameSnapshot | null = null;
+    private unfall: GameSnapshot | null = null;
+    //  True while a move is played backwards for undo; input is ignored until the position is restored
+    private undoing = false;
+    //  Z or U is held down: undo again whenever nothing is moving
+    private undoHeld = false;
+    //  How the player faced before the moves just undone, to turn to once undoing stops
+    private undoneFacing: Direction | null = null;
     //  Dev mode, while H is held: the solution route drawn over the level, the search finding it,
     //  a note when there's no solution from here, and whether the route (or note) is ready for
     //  the current position
@@ -116,6 +146,8 @@ export class Game extends Scene
         this.from = data.from ?? (this.levelText ? 'Editor' : 'MainMenu');
         this.history = data.history ?? [];
         this.startState = data.state ?? null;
+        this.undoHeld = data.undoHeld ?? false;
+        this.unfall = data.unfall ?? null;
     }
 
     //  Data that starts this same level again
@@ -123,11 +155,15 @@ export class Game extends Scene
     //  while a trap springs
     restartLevel ()
     {
-        if (!this.levelComplete && !this.springing)
+        if (!this.levelComplete && !this.springing && !this.undoing)
         {
             //  Undo after a restart goes back to where things were. Mid-move, that's where they
             //  were before the move, which the move already added.
-            if (!this.isMoving)
+            if (this.isMoving)
+            {
+                this.forgetLastMove();
+            }
+            else
             {
                 this.history.push(this.snapshot());
             }
@@ -135,20 +171,181 @@ export class Game extends Scene
         }
     }
 
-    //  Goes back to the position before the last move or restart (Z or U, and the HUD's undo button).
-    //  Not once the level is complete, while a trap springs, or while something moves.
+    //  Goes back to the position before the last move or restart (Z or U, and the HUD's undo
+    //  button), playing the move backwards first. Not once the level is complete, while a trap
+    //  springs, or while something moves.
     undo ()
     {
-        const state = this.history.pop();
-        if (!state || this.levelComplete || this.springing || this.isMoving)
+        if (this.levelComplete || this.springing || this.isMoving || this.undoing)
         {
-            if (state)
-            {
-                this.history.push(state);
-            }
             return;
         }
-        this.scene.restart({ ...this.restartData(), state } satisfies GameData);
+        const state = this.history.pop();
+        if (!state)
+        {
+            return;
+        }
+        //  Until the position is restored, so nothing else is undone in the meantime
+        this.undoing = true;
+        if (state.move && state.fell)
+        {
+            //  The level has started over since the fall: rebuild it as it was just after it
+            const { cells } = state.move;
+            const afterFall = { ...state, player: { ...cells[cells.length - 1] }, facing: moveDirection(state.move) };
+            this.scene.restart({ ...this.restartData(), state: afterFall, unfall: state, undoHeld: this.undoHeld } satisfies GameData);
+        }
+        else if (state.move)
+        {
+            //  Played backwards and restored in place, so held undos run on smoothly
+            this.playBackwards(state, state.move, () => this.restoreInPlace(state));
+        }
+        else
+        {
+            //  A restart: start over in the earlier position. Undoing stays held across the
+            //  restart until Z or U is released.
+            this.scene.restart({ ...this.restartData(), state, undoHeld: this.undoHeld } satisfies GameData);
+        }
+    }
+
+    //  Finishes undoing a move that has been played backwards: everything is back where `state`
+    //  has it, so this sets where things are, which traps are armed, and the plates and doors.
+    //  The player turns back to how they faced before the move once undoing stops (see update).
+    private restoreInPlace (state: GameSnapshot)
+    {
+        this.playerPos = { ...state.player };
+        this.level.data.boulders.splice(0, Infinity, ...state.boulders.map(b => ({ ...b })));
+        this.level.traps.forEach((trap, i) =>
+        {
+            trap.armed = state.armedTraps.includes(i);
+        });
+        this.updatePlates();
+        this.undoneFacing = state.facing;
+        this.undoing = false;
+    }
+
+    //  Undoing a fall into a trap, in a level built as it was just after the fall (see undo): the
+    //  player, in the open pit, rises out of it as the trap closes back to armed, then walks
+    //  back to where they were before the fatal step, `state`
+    private riseFromPit (state: GameSnapshot)
+    {
+        const trap = this.trapAt(this.playerPos);
+        if (!trap || !state.move)
+        {
+            this.restoreInPlace(state);
+            return;
+        }
+        this.undoing = true;
+        const player = this.level.player;
+        const full = player.scale;
+        player.setScale(full * 0.4).setAlpha(0);
+        //  The forward fall, reversed: the pit (the spring's last frame) closes as the player grows
+        this.unspring(trap);
+        const duration = trap.sprite.anims.duration;
+        this.tweens.add({
+            targets: player,
+            scale: full,
+            alpha: 1,
+            duration: duration * 2 / 3,
+            onComplete: () => this.playBackwards(state, state.move!, () => this.restoreInPlace(state))
+        });
+    }
+
+    //  Plays a trap's spring backwards, closing its pit, and leaves it on the armed frame (playing
+    //  backwards ends on the spring's first frame, one past it)
+    private unspring (trap: Trap)
+    {
+        trap.sprite.playReverse('trap-spring');
+        trap.sprite.once(Animations.Events.ANIMATION_COMPLETE, () => trap.sprite.setFrame(trapArmedFrame(this)));
+    }
+
+    //  Undoes, and keeps undoing until releaseUndo (Z or U, or the HUD's undo button, held down)
+    holdUndo ()
+    {
+        this.undoHeld = true;
+        this.undo();
+    }
+
+    releaseUndo ()
+    {
+        this.undoHeld = false;
+    }
+
+    //  The latest history entry no longer leads to the current position (the level is starting
+    //  over), so undoing it shouldn't play its move backwards
+    private forgetLastMove ()
+    {
+        const last = this.history[this.history.length - 1];
+        if (last?.move)
+        {
+            this.history[this.history.length - 1] = { ...last, move: undefined };
+        }
+    }
+
+    //  Plays `move`, made from `state`, backwards, then calls `done`: the player or boulder goes
+    //  back along its path, and a trap the move armed goes dark again. A boulder that fell into a
+    //  trap first rises out of the reopened pit as the trap closes back to armed.
+    private playBackwards (state: GameSnapshot, move: UndoableMove, done: () => void)
+    {
+        const end = move.cells[move.cells.length - 1];
+        const back = move.cells.slice(0, -1).reverse();
+        const trap = this.trapAt(end);
+        const armedByMove = trap !== undefined && !state.armedTraps.includes(this.level.traps.indexOf(trap));
+        if (armedByMove)
+        {
+            trap.sprite.playReverse('trap-arm');
+        }
+
+        //  The player faced the way of the move while making it (walking, or pushing), though they
+        //  may have turned since by bumping into something; they face back to how they were
+        //  before the move only once undoing stops
+        this.facing = moveDirection(move);
+
+        if (move.boulder === undefined)
+        {
+            //  Facing the same way, so it's clearly a step back: sliding back first, then the
+            //  step. The walk carries on from an undo just before, so a held undo moonwalks.
+            this.playPlayerAnim(back.length > 1 ? 'idle' : 'walk');
+            if (back.length > 1)
+            {
+                this.time.delayedCall((back.length - 1) * MOVEMENT.slideMsPerTile, () => this.playPlayerAnim('walk'));
+            }
+            //  From the player's own position, so a plate they're on releases as they leave
+            this.tweenAlong(this.level.player, this.playerPos, back, done);
+            return;
+        }
+
+        this.playPlayerAnim('idle');
+        const i = move.boulder;
+        const fell = state.boulders.length > this.level.data.boulders.length;
+        if (!fell || !trap)
+        {
+            this.tweenAlong(this.level.boulders[i], this.level.data.boulders[i], back, done);
+            return;
+        }
+
+        //  The forward fall, reversed: the closed trap opens, the boulder rises as the trap
+        //  un-springs, then it slides back
+        const boulder = addBoulder(this, end);
+        const full = boulder.scale;
+        boulder.setScale(full * 0.4).setAlpha(0);
+        trap.sprite.playReverse('trap-close');
+        trap.sprite.once(Animations.Events.ANIMATION_COMPLETE, () =>
+        {
+            this.unspring(trap);
+            const duration = trap.sprite.anims.duration;
+            this.tweens.add({
+                targets: boulder,
+                scale: full,
+                alpha: 1,
+                duration: duration * 2 / 3,
+                onComplete: () => this.tweenAlong(boulder, end, back, () =>
+                {
+                    //  Back among the level's boulders, in its old place in the list
+                    this.level.boulders.splice(i, 0, boulder);
+                    done();
+                })
+            });
+        });
     }
 
     private snapshot (): GameSnapshot
@@ -240,9 +437,18 @@ export class Game extends Scene
         this.isMoving = false;
         this.levelComplete = false;
         this.springing = false;
+        this.undoing = false;
+        this.undoneFacing = null;
         this.reportedDir = null;
         this.playPlayerAnim('idle');
-        this.saveProgress();
+        if (this.unfall)
+        {
+            this.riseFromPit(this.unfall);
+        }
+        else
+        {
+            this.saveProgress();
+        }
 
         this.routeGraphics = this.add.graphics().setDepth(ROUTE_DEPTH).setVisible(false);
         //  Under the HUD's buttons
@@ -288,16 +494,24 @@ export class Game extends Scene
                     this.restartLevel();
                 }
             });
-            //  Z or U undoes, with or without Ctrl or Cmd
+            //  Z or U undoes, with or without Ctrl or Cmd, and keeps undoing while held (see
+            //  update). Browsers don't reliably repeat held letter keys (macOS shows its accent
+            //  menu instead), so holding is tracked from keydown to keyup.
             const undoKey = (event: KeyboardEvent) =>
             {
                 if (!event.altKey && !event.shiftKey)
                 {
-                    this.undo();
+                    this.holdUndo();
                 }
             };
+            const releaseUndo = () => this.releaseUndo();
             keyboard.on('keydown-Z', undoKey);
             keyboard.on('keydown-U', undoKey);
+            keyboard.on('keyup-Z', releaseUndo);
+            keyboard.on('keyup-U', releaseUndo);
+            //  A key released in another window never sends keyup here
+            this.game.events.on(Core.Events.BLUR, releaseUndo);
+            this.events.once(Scenes.Events.SHUTDOWN, () => this.game.events.off(Core.Events.BLUR, releaseUndo));
             //  Dev mode: N finishes the level on the spot (not with a modifier, like R)
             keyboard.on('keydown-N', (event: KeyboardEvent) =>
             {
@@ -331,9 +545,22 @@ export class Game extends Scene
 
     update ()
     {
-        if (this.isMoving || this.levelComplete || this.springing)
+        if (this.isMoving || this.levelComplete || this.springing || this.undoing)
         {
             return;
+        }
+        //  Z or U still held: undo the next move. Once there's nothing left to undo, or it's
+        //  released, the player turns back to how they faced before the last move undone.
+        if (this.undoHeld && this.history.length > 0)
+        {
+            this.undo();
+            return;
+        }
+        if (this.undoneFacing)
+        {
+            this.facing = this.undoneFacing;
+            this.undoneFacing = null;
+            this.playPlayerAnim('idle');
         }
 
         const dir = this.heldDirection();
@@ -350,7 +577,16 @@ export class Game extends Scene
 
         const move = resolveMove(this.level.data, this.playerPos, dir, this.trapsArmed());
         this.facing = dir;
-        if (move.kind !== 'blocked')
+        if (move.kind === 'walk')
+        {
+            this.history.push({ ...this.snapshot(), move: { cells: [{ ...this.playerPos }, ...move.path] } });
+        }
+        else if (move.kind === 'push')
+        {
+            const i = move.boulderIndex;
+            this.history.push({ ...this.snapshot(), move: { boulder: i, cells: [{ ...this.level.data.boulders[i] }, ...move.path] } });
+        }
+        else if (move.kind === 'exit')
         {
             this.history.push(this.snapshot());
         }
@@ -459,7 +695,13 @@ export class Game extends Scene
         this.playPlayerAnim('idle');
         trap.sprite.play('trap-spring');
         this.fallIntoPit(this.level.player, trap);
-        //  The scene clock pauses with the scene, so the wait does too
+        //  The scene clock pauses with the scene, so the wait does too. Undo then plays the fall
+        //  and the fatal step backwards.
+        const last = this.history[this.history.length - 1];
+        if (last?.move)
+        {
+            last.fell = true;
+        }
         trap.sprite.once(Animations.Events.ANIMATION_COMPLETE, () =>
             this.time.delayedCall(TRAPS.restartDelayMs, () => this.scene.restart(this.restartData())));
     }
