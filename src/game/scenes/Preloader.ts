@@ -1,6 +1,6 @@
 import { Scene, Textures } from 'phaser';
 import { createPlayerAnimations, PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT } from '../playerAnimations';
-import { generateTextures } from '../textures';
+import { addMirroredTexture, generateTextures } from '../textures';
 import { addIconSilhouette, FONT_FAMILY, UI_LIGHT } from '../ui/Button';
 import { LEVELS } from '../levels/levelList';
 import { loadImportedPacks } from '../levels/importedPacks';
@@ -49,14 +49,14 @@ export class Preloader extends Scene
         this.load.image('wallAutotile', 'walls/ranitaya_autotile_wall.png');
         this.load.image('floor', 'floor/ranitaya_floor.png');
         this.load.image('ice', 'ice/buch_ice_muted.png');
-        //  Button icons (undo and redo are drawn in textures.ts)
+        //  Button icons
         this.load.image('icon-pencil', 'ui/icons/pencil.png');
         this.load.image('icon-home', 'ui/icons/ranitaya_home.png');
         this.load.image('icon-gear', 'ui/icons/ranitaya_settings.png');
         this.load.image('icon-restart', 'ui/icons/ranitaya_reset.png');
         this.load.image('icon-lock', 'ui/icons/ranitaya_lock.png');
-        //  The game's undo; the editor's undo and redo are drawn (see textures.ts)
-        this.load.image('icon-game-undo', 'ui/icons/ranitaya_undo.png');
+        //  Undo; redo is its mirror image (see create)
+        this.load.image('icon-undo', 'ui/icons/ranitaya_undo.png');
         this.load.image('ui-panel', 'ui/ranitaya_square_panel.png');
         this.load.image('ui-wide-panel', 'ui/ranitaya_wide_panel.png');
         loadPlates(this);
@@ -75,7 +75,8 @@ export class Preloader extends Scene
         //  When all the assets have loaded, it's often worth creating global objects here that the rest of the game can use.
         //  For example, you can define global animations here, so we can use them in other scenes.
         //  Keep the scaled-up pixel art sharp (only these textures; others still smooth)
-        const icons = ['icon-pencil', 'icon-home', 'icon-gear', 'icon-restart', 'icon-lock', 'icon-game-undo'];
+        addMirroredTexture(this, 'icon-redo', 'icon-undo');
+        const icons = ['icon-pencil', 'icon-home', 'icon-gear', 'icon-restart', 'icon-lock', 'icon-undo', 'icon-redo'];
         for (const key of ['player', 'boulder', 'goal', 'floor', 'plate-press', 'plate-unpress', 'door-open', 'door-close', 'trap',
             ...icons, 'ui-panel', 'ui-wide-panel'])
         {

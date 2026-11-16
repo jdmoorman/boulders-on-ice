@@ -35,7 +35,7 @@ export class GameHud extends Scene
             [game.levelText ? 'icon-pencil' : 'icon-home', () => game.goBack()],
             ['icon-gear', () => game.openSettings()],
             ['icon-restart', () => game.restartLevel()],
-            ['icon-game-undo', () => game.undo()],
+            ['icon-undo', () => game.undo()],
             ...(gameSettings().devMode && !game.levelText ? [['icon-pencil', () => game.copyToEditor()] as [string, () => void]] : [])
         ];
         buttons.forEach(([icon, action], i) =>

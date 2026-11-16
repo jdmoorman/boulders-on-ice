@@ -1,7 +1,6 @@
 import { Scene, Textures } from 'phaser';
 import { TILE_SIZE, TileIndex } from './levels/Tiles';
 import { PLAYER_FRAME_WIDTH } from './playerAnimations';
-import { UI_LIGHT_CSS } from './ui/Button';
 import {
     AUTOTILE_COLUMNS, AUTOTILE_FRAMES, AUTOTILE_SETS, ISOLATED_FRAME, autotileBase,
     autotileFrameSize, isTallSet
@@ -11,7 +10,6 @@ import {
 //  - 'tiles': a horizontal strip of TILE_SIZE tiles in TileIndex order, followed by every frame
 //    of each autotile set (see autotile.ts). Floor (snow) and ice are the plain 'floor' and
 //    'ice' images; walls come from an autotile sheet. All are scaled up to a tile.
-//  - 'icon-undo' and 'icon-redo'. The other button icons are images loaded in the Preloader.
 export function generateTextures (scene: Scene): void
 {
     const S = TILE_SIZE;
@@ -78,60 +76,21 @@ export function generateTextures (scene: Scene): void
     //  The standing, facing-down player (sheet frame 1) trimmed to its visible pixels, so the
     //  editor palette can draw the figure itself as big as the other icons
     scene.textures.get('player').add('palette', 0, PLAYER_FRAME_WIDTH + 2, 6, 14, 19);
-
-    addArrowTexture(scene, 'icon-undo', false);
-    addArrowTexture(scene, 'icon-redo', true);
 }
 
-//  A curved arrow (the classic undo symbol): an arc over the top, with the head on the left
-//  pointing down. `mirrored` flips it to point right, for redo. Drawn in the UI colour with a black outline.
-function addArrowTexture (scene: Scene, key: string, mirrored: boolean): void
+//  Adds a left-to-right mirror image of a loaded image as another texture: redo from undo.
+//  Call before the textures are given their filter and outline in the Preloader.
+export function addMirroredTexture (scene: Scene, key: string, from: string): void
 {
-    const size = 48;
-    const texture = scene.textures.createCanvas(key, size, size);
+    const source = scene.textures.get(from).getSourceImage() as HTMLImageElement;
+    const texture = scene.textures.createCanvas(key, source.width, source.height);
     if (!texture)
     {
         throw new Error(`Could not create canvas texture '${key}'`);
     }
     const c = texture.context;
-    if (mirrored)
-    {
-        c.translate(size, 0);
-        c.scale(-1, 1);
-    }
-
-    const shaft = () =>
-    {
-        c.beginPath();
-        c.arc(26, 30, 13, 0, Math.PI, true);
-        c.stroke();
-    };
-    const head = () =>
-    {
-        c.beginPath();
-        c.moveTo(4, 26);
-        c.lineTo(22, 26);
-        c.lineTo(13, 40);
-        c.closePath();
-    };
-
-    c.lineCap = 'round';
-    c.lineJoin = 'round';
-
-    //  Black outline first, then the UI colour on top
-    c.strokeStyle = '#000000';
-    c.lineWidth = 11;
-    shaft();
-    head();
-    c.lineWidth = 5;
-    c.stroke();
-
-    c.strokeStyle = UI_LIGHT_CSS;
-    c.lineWidth = 5;
-    shaft();
-    head();
-    c.fillStyle = UI_LIGHT_CSS;
-    c.fill();
-
+    c.translate(source.width, 0);
+    c.scale(-1, 1);
+    c.drawImage(source, 0, 0);
     texture.refresh();
 }
