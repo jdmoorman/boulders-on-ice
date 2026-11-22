@@ -1,0 +1,10 @@
+############
+#ttttt###tt#
+#tttttttttt#
+#t#tttttttt#
+#t#tttttttt#
+#ttttttttt####
+#ttttttttt##x#
+#tttttttttt#d#
+#ttt###tttttt#
+#########p####
